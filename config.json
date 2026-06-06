@@ -1,0 +1,10 @@
+{
+  "base_url": "https://automationexercise.com",
+  "user_email": "1234@tut.by",
+  "user_password": "12345",
+  "brand_first": "Polo",
+  "brand_second": "Biba",
+  "invoice_user_name": "Hi 1 1",
+  "amount_single_brand": "500",
+  "amount_multiple_brands": "2030"
+}
