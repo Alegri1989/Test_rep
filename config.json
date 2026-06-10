@@ -1,10 +1,32 @@
 {
-  "base_url": "https://automationexercise.com",
-  "user_email": "1234@tut.by",
-  "user_password": "12345",
-  "brand_first": "Polo",
-  "brand_second": "Biba",
-  "invoice_user_name": "Hi 1 1",
-  "amount_single_brand": "500",
-  "amount_multiple_brands": "2030"
+  "base_url": "https://gsz.gov.by",
+  "user_email": "Galerko.S@mintrud.by",
+  "user_password": "Primero2",
+  "default_profile": {
+    "last_name": "Алексеев",
+    "first_name": "Григорий",
+    "middle_name": "Михайлович",
+    "gender": "M",
+    "education": "Высшее",
+    "region": "Витебская",
+    "district": "Докшицкий",
+    "address": "с/с Березинский, Заголовье",
+    "email_sent": "Galerko.S@mintrud.by",
+    "date_of_birth": "05.02.2008"
+  },
+  "profile_test_data": {
+    "edit_fio": {
+      "last_name": "Иванов",
+      "first_name": "Иван",
+      "middle_name": "Иванович"
+    },
+    "statuses": [
+      "Активно ищу работу",
+      "Не ищу работу"
+    ],
+    "educations": [
+      "Общее среднее",
+      "Среднее специальное"
+    ]
+  }
 }

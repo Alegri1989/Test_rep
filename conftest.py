@@ -1,8 +1,8 @@
 import os
 import json
 import pytest
-import allure
-from playwright.sync_api import sync_playwright, Page
+from playwright.sync_api import sync_playwright
+from pages.login_page import LoginPage
 
 # Путь к файлу для сохранения состояния авторизации (куки, сессии)
 AUTH_STATE_PATH = "auth_state.json"
@@ -12,112 +12,88 @@ with open("config.json", "r", encoding="utf-8") as f:
     CONFIG = json.load(f)
 
 
-def block_ads_route(route):
-    """Перехватывает сетевые запросы сайта и блокирует рекламные скрипты Google.
-    """
-    url = route.request.url.lower()
-    if "googleads" in url or "googlesyndication" in url:
-        if route.request.resource_type == "script":
-            return route.abort()  # Полностью отменяем загрузку рекламы
-    return route.continue_()  # Разрешаем загрузку остальных полезных файлов сайта
+def pytest_addoption(parser):
+    """Регистрируем флаги проекта, чтобы pytest не ругался на их отсутствие."""
+    parser.addoption(
+        "--headed", action="store_true", default=False, help="Запуск браузера в видимом режиме"
+    )
+    parser.addoption(
+        "--slowmo", action="store", default=0, type=int, help="Замедление действий в мс (например, 1000)"
+    )
 
 
 @pytest.fixture(scope="session", autouse=True)
 def run_global_auth(pytestconfig):
-    """Глобальная фикстура для автоматической авторизации в начале тестовой сессии.
-
-    Один раз логинится на сайте, сохраняет куки в файл auth_state.json и закрывается.
-    После завершения всех тестов удаляет созданный файл авторизации.
-    """
-    # Определяем режим запуска браузера: с окном (--headed) или в фоне (headless)
+    """Глобальная фикстура для автоматической авторизации в начале тестовой сессии."""
     is_headless = not pytestconfig.getoption("headed")
 
     with sync_playwright() as p:
-        # Запускаем браузер Chromium с английской локалью без автопереводчика страниц
-        browser = p.chromium.launch(
-            headless=is_headless,
-            args=["--disable-features=Translate", "--lang=en-US"]
-        )
-        context = browser.new_context(locale="en-US")
-        context.route("**/*", block_ads_route)  # Включаем блокировщик рекламы
+        browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"])
+        context = browser.new_context(locale="ru-RU")
         page = context.new_page()
 
-        # Переходим на страницу логина, используя адрес из config.json
-        page.goto(f"{CONFIG['base_url']}/login", wait_until="domcontentloaded")
-        page.locator(".login-form").wait_for(state="visible")
+        login_page = LoginPage(page)
+        login_page.login(CONFIG['user_email'], CONFIG['user_password'])
 
-        # Заполняем форму авторизации данными из конфига и нажимаем кнопку войти
-        page.locator(".login-form input[type='email']").fill(CONFIG['user_email'])
-        page.locator(".login-form input[type='password']").fill(CONFIG['user_password'])
-        page.locator(".login-form button[type='submit']").click()
+        # ЖДЕМ ГАРАНТИРОВАННОГО ВХОДА: собираем полное имя из конфига для проверки
+        fio = CONFIG["default_profile"]
+        full_name = f"{fio['last_name']} {fio['first_name']} {fio['middle_name']}".upper()
 
-        # Ждем подтверждения успешного входа на сайт
-        page.wait_for_selector("text=Logged in as")
+        # Ожидаем появление элемента с ФИО в верхнем углу (таймаут 10 секунд)
+        page.get_by_text(full_name).wait_for(state="visible", timeout=10000)
 
-        # Сохраняем сессию (токены и куки) в файл, чтобы не логиниться в каждом тесте заново
+        # Даем сайту еще 500 мс на окончательное сохранение кук после рендеринга
+        page.wait_for_timeout(500)
+
+        # Сохраняем готовую сессию
         context.storage_state(path=AUTH_STATE_PATH)
         browser.close()
 
-    yield  # Здесь выполняются все наши тесты проекта
+    yield
 
-    # Блок финализации: удаляем файл авторизации после окончания всех тестов сессии
     if os.path.exists(AUTH_STATE_PATH):
         os.remove(AUTH_STATE_PATH)
 
 
 @pytest.fixture(scope="function")
 def auth_page(pytestconfig, request):
-    """Функциональная фикстура, которая создает чистую страницу браузера для каждого теста.
-
-    Автоматически подкидывает сохраненный файл авторизации и включает запись видео.
-    """
+    """Функциональная фикстура, которая создает чистую страницу с уже готовой авторизацией."""
     is_headless = not pytestconfig.getoption("headed")
+    # Считываем значение из терминала (по умолчанию 0)
+    slow_mo_val = pytestconfig.getoption("slowmo")
 
     with sync_playwright() as p:
         browser = p.chromium.launch(
             headless=is_headless,
-            args=["--disable-features=Translate", "--lang=en-US"]
+            args=["--lang=ru-RU"],
+            slow_mo=slow_mo_val  # Подставляем считанное значение
         )
-        # Создаем контекст с уже готовой авторизацией и настройкой записи видео
+
         context = browser.new_context(
             storage_state=AUTH_STATE_PATH,
             record_video_dir="videos/",
-            locale="en-US"
+            locale="ru-RU"
         )
-        context.route("**/*", block_ads_route)
         page = context.new_page()
 
-        # Передаем объект страницы в переменные pytest (request),
-        # чтобы хук создания скриншотов имел доступ к экрану браузера в случае падения
         request.node.funcargs['page_object'] = page
 
-        yield page  # Передаем готовую страницу внутрь тестовой функции
+        yield page
 
-        # Закрываем страницу и браузер после завершения отдельного теста
         context.close()
         browser.close()
 
 
-@pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
-    """Хук Pytest, который следит за статусом выполнения каждого шага теста.
+@pytest.fixture(scope="session")
+def app_config():
+    """Фикстура предоставляет доступ к настройкам из config.json без прямых импортов."""
+    return CONFIG
 
-    Если тест падает, хук берет активный объект страницы из фикстуры, делает
-    полноэкранный скриншот в байтах и прикрепляет его к отчету Allure.
-    """
-    outcome = yield
-    report = outcome.get_result()
 
-    # Проверяем, что шаг теста завершился ошибкой (failed) непосредственно во время выполнения
-    if report.when == "call" and report.failed:
-        # Проверяем, успела ли фикстура передать страницу браузера
-        if 'page_object' in item.funcargs:
-            page: Page = item.funcargs['page_object']
-            # Делаем снимок всей страницы сайта
-            screenshot = page.screenshot(full_page=True)
-            # Прикрепляем полученный скриншот к отчету Allure
-            allure.attach(
-                screenshot,
-                name="Screenshot on Failure",
-                attachment_type=allure.attachment_type.PNG
-            )
+def pytest_generate_tests(metafunc):
+    """Динамическая параметризация тестов данными из config.json без прямых импортов."""
+    if "test_status" in metafunc.fixturenames:
+        metafunc.parametrize("test_status", CONFIG["profile_test_data"]["statuses"])
+
+    if "test_education" in metafunc.fixturenames:
+        metafunc.parametrize("test_education", CONFIG["profile_test_data"]["educations"])
