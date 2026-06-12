@@ -27,6 +27,21 @@
     "educations": [
       "Общее среднее",
       "Среднее специальное"
-    ]
+    ],
+    "edit_address": {
+      "region": "Минская",
+      "district": "Борисовский",
+      "address": "Борисов"
+    },
+    "edit_contacts": {
+      "test_email": "test_mail_new@mintrud.by",
+      "test_main_phone": "375259998877",
+      "additional_phone_1": "375256665544",
+      "additional_phone_2": "375253332211"
+    },
+    "negative_contacts": {
+      "already_taken_phone": "375291112233",
+      "already_taken_email": "Alekseev.G@cit-mintrud.by"
+    }
   }
 }

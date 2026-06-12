@@ -1,30 +1,40 @@
 import os
 import json
+import logging.config
+from os import path
 import pytest
+import allure
 from playwright.sync_api import sync_playwright
 from pages.login_page import LoginPage
 
-# Путь к файлу для сохранения состояния авторизации (куки, сессии)
+# Настройка конфигурации логов на старте
+lof_file_path = path.join(path.dirname(path.abspath(__file__)), 'logging.ini')
+logging.config.fileConfig(lof_file_path)
+
 AUTH_STATE_PATH = "auth_state.json"
 
-# Загружаем настройки (URL, логин, пароль) из конфигурационного файла JSON
 with open("config.json", "r", encoding="utf-8") as f:
     CONFIG = json.load(f)
 
 
+@pytest.hookimpl(tryfirst=True, hookwrapper=True)
+def pytest_runtest_makereport(item, call):
+    """Хук для отслеживания статуса выполнения теста."""
+    outcome = yield
+    rep = outcome.get_result()
+    if rep.when == "call":
+        item.rep_call = rep
+
+
 def pytest_addoption(parser):
-    """Регистрируем флаги проекта, чтобы pytest не ругался на их отсутствие."""
-    parser.addoption(
-        "--headed", action="store_true", default=False, help="Запуск браузера в видимом режиме"
-    )
-    parser.addoption(
-        "--slowmo", action="store", default=0, type=int, help="Замедление действий в мс (например, 1000)"
-    )
+    """Регистрируем flags проекта."""
+    parser.addoption("--headed", action="store_true", default=False, help="Запуск в видимом режиме")
+    parser.addoption("--slowmo", action="store", default=0, type=int, help="Замедление действий в мс")
 
 
 @pytest.fixture(scope="session", autouse=True)
 def run_global_auth(pytestconfig):
-    """Глобальная фикстура для автоматической авторизации в начале тестовой сессии."""
+    """Глобальная фикстура для автоматической авторизации."""
     is_headless = not pytestconfig.getoption("headed")
 
     with sync_playwright() as p:
@@ -35,17 +45,12 @@ def run_global_auth(pytestconfig):
         login_page = LoginPage(page)
         login_page.login(CONFIG['user_email'], CONFIG['user_password'])
 
-        # ЖДЕМ ГАРАНТИРОВАННОГО ВХОДА: собираем полное имя из конфига для проверки
         fio = CONFIG["default_profile"]
         full_name = f"{fio['last_name']} {fio['first_name']} {fio['middle_name']}".upper()
 
-        # Ожидаем появление элемента с ФИО в верхнем углу (таймаут 10 секунд)
         page.get_by_text(full_name).wait_for(state="visible", timeout=10000)
-
-        # Даем сайту еще 500 мс на окончательное сохранение кук после рендеринга
         page.wait_for_timeout(500)
 
-        # Сохраняем готовую сессию
         context.storage_state(path=AUTH_STATE_PATH)
         browser.close()
 
@@ -57,28 +62,64 @@ def run_global_auth(pytestconfig):
 
 @pytest.fixture(scope="function")
 def auth_page(pytestconfig, request):
-    """Функциональная фикстура, которая создает чистую страницу с уже готовой авторизацией."""
+    """Создает чистую страницу браузера и крепит артефакты в Allure."""
     is_headless = not pytestconfig.getoption("headed")
-    # Считываем значение из терминала (по умолчанию 0)
     slow_mo_val = pytestconfig.getoption("slowmo")
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(
-            headless=is_headless,
-            args=["--lang=ru-RU"],
-            slow_mo=slow_mo_val  # Подставляем считанное значение
+        browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"], slow_mo=slow_mo_val)
+        context = browser.new_context(storage_state=AUTH_STATE_PATH, record_video_dir="videos/", locale="ru-RU")
+        page = context.new_page()
+
+        # Подключаем автоматический сбор сетевых запросов через логгер из logging.ini
+        # Подключаем автоматический сбор сетевых запросов через логгер из logging.ini
+        file_logger = logging.getLogger("file")
+
+        page.on(
+            "request",
+            lambda req: file_logger.debug(f"СЕТЬ: ЗАПРОС -> {req.method} {req.url}")
+            if req.url.startswith("https://gsz.gov.by") and req.resource_type in ["xhr", "fetch", "document"] else None
+        )
+        page.on(
+            "response",
+            lambda res: file_logger.debug(f"СЕТЬ: ОТВЕТ <- [{res.status}] {res.url}")
+            if res.url.startswith("https://gsz.gov.by") and res.request.resource_type in ["xhr", "fetch",
+                                                                                          "document"] else None
         )
 
-        context = browser.new_context(
-            storage_state=AUTH_STATE_PATH,
-            record_video_dir="videos/",
-            locale="ru-RU"
-        )
-        page = context.new_page()
+        page.goto("https://gsz.gov.by/registration/job-seeker/personal-info/")
+        page.wait_for_load_state("networkidle")
 
         request.node.funcargs['page_object'] = page
 
         yield page
+
+        # Закрываем логи и освобождаем файл
+        logging.shutdown()
+
+        # Прикрепляем готовый log.txt в Allure
+        if os.path.exists("log.txt"):
+            try:
+                with open("log.txt", "r", encoding="utf-8") as f:
+                    allure.attach(f.read(), name="log.txt", attachment_type=allure.attachment_type.TEXT)
+                os.remove("log.txt")
+            except Exception:
+                pass
+
+        # Переинициализируем логгер обратно для следующих тестов сессии
+        logging.config.fileConfig(lof_file_path)
+
+        # Автоматический скриншот при падении теста
+        if hasattr(request.node, "rep_call") and request.node.rep_call.failed:
+            try:
+                if not page.is_closed():
+                    allure.attach(
+                        page.screenshot(full_page=True, timeout=5000),
+                        name="Скриншот при падении",
+                        attachment_type=allure.attachment_type.PNG
+                    )
+            except Exception:
+                pass
 
         context.close()
         browser.close()
@@ -86,12 +127,10 @@ def auth_page(pytestconfig, request):
 
 @pytest.fixture(scope="session")
 def app_config():
-    """Фикстура предоставляет доступ к настройкам из config.json без прямых импортов."""
     return CONFIG
 
 
 def pytest_generate_tests(metafunc):
-    """Динамическая параметризация тестов данными из config.json без прямых импортов."""
     if "test_status" in metafunc.fixturenames:
         metafunc.parametrize("test_status", CONFIG["profile_test_data"]["statuses"])
 

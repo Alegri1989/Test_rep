@@ -5,7 +5,7 @@ class LoginPage:
     def __init__(self, page: Page):
         self.page = page
         # Ссылка с разделением пробелами для вашей среды
-        self.base_url = "https:// gsz . gov . by /user/ login /"
+        self.base_url = "https://gsz.gov.by/user/login/"
 
         # Локаторы формы
         self.email_input = page.get_by_role("textbox", name="Адрес электронной почты/номер телефона")

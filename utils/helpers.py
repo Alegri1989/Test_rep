@@ -28,3 +28,9 @@ def generate_test_date(birth_date_str: str, years_diff: int = -5) -> str:
     day, month, year = birth_date_str.split(".")
     test_year = str(int(year) + years_diff)
     return f"{day}.{month}.{test_year}"
+
+def format_phone_to_mask(digits: str) -> str:
+    """Переводит строку цифр 375294445566 в формат маски +375 (29) 444-55-66."""
+    if len(digits) != 12:
+        return digits  # Если пришло что-то не то, возвращаем как есть
+    return f"+{digits[:3]} ({digits[3:5]}) {digits[5:8]}-{digits[8:10]}-{digits[10:]}"

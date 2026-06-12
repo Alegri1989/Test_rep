@@ -11,3 +11,4 @@ def open_profile_page(auth_page):
     auth_page.goto(clean_url)
 
     return auth_page
+
