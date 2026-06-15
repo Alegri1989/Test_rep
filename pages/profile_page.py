@@ -53,6 +53,8 @@ class ProfilePage:
         self.email_error_message = page.locator(".form-group:has(#id_email_for_message) div.invalid-feedback")
         self.phone_error_message = page.locator(".form-group:has(#id_phone) div.invalid-feedback")
 
+        self.privacy_checkbox = self.page.get_by_label("Скрыть ФИО")
+
     def fill_field_safely(self, locator, text: str):
         """Очищает поле и вводит новый текст через клавиатуру."""
         logging.debug(f"Действие: Заполнение поля текстом '{text}'")
@@ -108,3 +110,4 @@ class ProfilePage:
         self.date_of_birth_input.click()
         self.page.keyboard.press("Alt+ArrowDown")
         self.page.wait_for_timeout(500)
+

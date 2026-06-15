@@ -347,3 +347,22 @@ class TestProfilePart1:
 
             with allure.step("Проверка успешного восстановления номера"):
                 expect(profile.main_phone_input).to_have_value(initial_phone)
+
+        @allure.title("Проверка кликабельности чек-бокса скрытия ФИО")
+        def test_click_privacy_checkbox(self, open_profile_page: Page):
+            profile = ProfilePage(open_profile_page)
+
+            with allure.step("Шаг 1: Активация чек-бокса 'Скрыть ФИО'"):
+                profile.privacy_checkbox.dispatch_event("click")
+                profile.save_changes()
+
+            with allure.step("ОР 1: Чек-бокс успешно активен"):
+                expect(profile.privacy_checkbox).to_be_checked()
+
+            with allure.step("Шаг 2: Деактивация чек-бокса (возврат в исходное состояние)"):
+                profile.privacy_checkbox.dispatch_event("click")
+                profile.save_changes()
+
+            with allure.step("ОР 2: Чек-бокс успешно снят"):
+                expect(profile.privacy_checkbox).not_to_be_checked()
+
