@@ -2,11 +2,11 @@ import pytest
 import allure
 from playwright.sync_api import Page, expect
 from pages.resume_page import ResumePage
-from utils.helpers import calculate_expected_age
+from helpers.helpers import calculate_expected_age
 import re
 
 
-@allure.epic("Личный кабинет соискателя")
+@allure.epic("Резюме соискателя")
 @allure.feature("Создание резюме")
 class TestResumeProfileBlock:
 
@@ -320,4 +320,3 @@ class TestResumeProfileBlock:
                 with allure.step("ОР: Текст успешно отображается в поле ввода"):
                     expect(resume.additional_info_textarea).to_have_value(test_text)
 
-        

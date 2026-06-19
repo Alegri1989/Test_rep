@@ -12,7 +12,8 @@
     "district": "Докшицкий",
     "address": "с/с Березинский, Заголовье",
     "email_sent": "Galerko.S@mintrud.by",
-    "date_of_birth": "05.02.2008"
+    "date_of_birth": "05.02.2008",
+    "main_phone": "375647474741"
   },
   "profile_test_data": {
     "edit_fio": {
@@ -43,5 +44,10 @@
       "already_taken_phone": "375291112233",
       "already_taken_email": "Alekseev.G@cit-mintrud.by"
     }
+  },
+  "vacancy_filter_test_data": {
+    "employer_name": "Государственное предприятие \"ЦИТ Минтруда и соцзащиты\"",
+    "employer_unp": "191009727",
+    "employer_assert_keyword": "ЦИТ Минтруда"
   }
 }

@@ -64,15 +64,17 @@ def run_global_auth(pytestconfig):
 def auth_page(pytestconfig, request):
     """Создает чистую страницу браузера и крепит артефакты в Allure."""
     is_headless = not pytestconfig.getoption("headed")
+
+    # 🎯 Если в консоли слоумо не указан (равен 0), ставим базовые 400 мс для стабильности сьюта
     slow_mo_val = pytestconfig.getoption("slowmo")
+    if slow_mo_val == 0:
+        slow_mo_val = 400
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"], slow_mo=slow_mo_val)
         context = browser.new_context(storage_state=AUTH_STATE_PATH, record_video_dir="videos/", locale="ru-RU")
         page = context.new_page()
 
-        # Подключаем автоматический сбор сетевых запросов через логгер из logging.ini
-        # Подключаем автоматический сбор сетевых запросов через логгер из logging.ini
         file_logger = logging.getLogger("file")
 
         page.on(
@@ -100,11 +102,13 @@ def auth_page(pytestconfig, request):
         # Прикрепляем готовый log.txt в Allure
         if os.path.exists("log.txt"):
             try:
-                with open("log.txt", "r", encoding="utf-8") as f:
-                    allure.attach(f.read(), name="log.txt", attachment_type=allure.attachment_type.TEXT)
-                os.remove("log.txt")
+                if not page.is_closed():
+                    page.wait_for_load_state("networkidle", timeout=3000)
             except Exception:
                 pass
+
+                # Закрываем логи и освобождаем файл
+            logging.shutdown()
 
         # Переинициализируем логгер обратно для следующих тестов сессии
         logging.config.fileConfig(lof_file_path)

@@ -5,7 +5,7 @@ from playwright.sync_api import Page, expect
 from pages.resume_page import ResumePage
 
 
-@allure.epic("Личный кабинет соискателя")
+@allure.epic("Резюме соискателя")
 @allure.feature("Создание резюме")
 class TestResumeIntegration:
 
@@ -24,8 +24,12 @@ class TestResumeIntegration:
         default_email = app_config["default_profile"]["email_sent"]
 
         with allure.step("Шаг 1: Заполнение блока 'Пожелания к работе'"):
-            resume.profession_container.wait_for(state="visible", timeout=5000)
-            resume.profession_container.click()
+            # Используем универсальный гибкий локатор вместо привязки к индексам формы
+            universal_profession_container = open_create_resume_page.locator(
+                "[id^='select2-id_desired_profession'][id$='container']"
+            )
+            universal_profession_container.wait_for(state="visible", timeout=5000)
+            universal_profession_container.click()
 
             resume.select2_search_input.press_sequentially(test_profession, delay=100)
             open_create_resume_page.wait_for_timeout(500)
@@ -70,7 +74,6 @@ class TestResumeIntegration:
 
         try:
             with allure.step("Шаг 9: Переход на форму редактирования созданного резюме"):
-                # Кликаем по кнопке 'Редактировать' самого нижнего (последнего) резюме в списке
                 open_create_resume_page.locator(
                     "a[href*='/registration/job-seeker/resume/'][href$='/update/']"
                 ).last.click()
@@ -83,7 +86,9 @@ class TestResumeIntegration:
                 update_profession_container.wait_for(state="visible", timeout=5000)
 
                 expect(update_profession_container).to_have_text(re.compile(test_profession))
-                expect(resume.derivative_update_dropdown).to_have_value("1")
+
+                # Железная проверка нативного селекта по таймауту без лишних кликов по UI
+                expect(resume.derivative_update_dropdown).to_have_value("1", timeout=5000)
                 expect(resume.salary_input).to_have_value(test_salary)
                 expect(resume.employment_nature_dropdown).to_have_value("1")
                 expect(resume.work_mode_dropdown).to_have_value("1")
@@ -100,64 +105,39 @@ class TestResumeIntegration:
                 expect(resume.lang_level_dropdown).to_have_value("10")
                 expect(resume.additional_info_textarea).to_have_value(test_info)
 
-
-
         finally:
-
             with allure.step("Шаг 10: Гарантированная очистка данных (удаление резюме)"):
+                # Разрываем гонку: даем Playwright 1.5 секунды, чтобы завершить все ассерты ДО деструктивных действий
+                open_create_resume_page.wait_for_timeout(1500)
 
                 current_url = open_create_resume_page.url
-
                 match = re.search(r"/resume/(\d+)/", current_url)
-
                 created_id = match.group(1) if match else None
-
-                # Даем серверу небольшую передышку перед редиректом
 
                 open_create_resume_page.wait_for_timeout(1000)
 
                 if "/update/" in current_url:
                     open_create_resume_page.goto(expected_list_url)
-
                     open_create_resume_page.wait_for_load_state("domcontentloaded")
 
                 if not created_id:
                     last_link = open_create_resume_page.locator(
-
                         "a[href*='/registration/job-seeker/resume/'][href$='/update/']"
-
                     ).last
-
                     href_value = last_link.get_attribute("href")
-
                     match = re.search(r"/resume/(\d+)/", href_value)
-
                     created_id = match.group(1) if match else None
 
-                # Делаем паузу перед вызовом модалки удаления
-
                 open_create_resume_page.wait_for_timeout(1000)
-
                 resume.last_resume_delete_btn.click()
 
-                # Даем модалке стабильно отрисоваться и разгрузить сеть
-
                 open_create_resume_page.wait_for_timeout(1000)
-
                 resume.popup_confirm_delete_btn.click()
-
                 open_create_resume_page.wait_for_load_state("networkidle")
 
             with allure.step("ОР 3: Удаленное резюме полностью исчезло из списка"):
-
-                # Небольшая пауза после удаления перед финальной проверкой DOM
-
                 open_create_resume_page.wait_for_timeout(1000)
-
                 deleted_resume_link = open_create_resume_page.locator(
-
                     f"a[href*='/registration/job-seeker/resume/{created_id}/update/']"
-
                 )
-
                 expect(deleted_resume_link).not_to_be_visible(timeout=5000)
