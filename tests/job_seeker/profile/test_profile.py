@@ -356,10 +356,21 @@ class TestProfilePart2:
             expect(profile.address_dropdown).to_have_text(test_addr["address"])
 
         with allure.step("Шаг 2: Восстановление дефолтных значений адреса"):
+            # 1. Возвращаем дефолтную область
             profile.select_from_dropdown(profile.region_dropdown, default["region"])
             expect(profile.region_dropdown).to_have_text(default["region"])
-
             open_profile_page.wait_for_timeout(1000)
+
+            # 2. Возвращаем дефолтный район
+            profile.select_from_dropdown(profile.district_dropdown, default["district"])
+            expect(profile.district_dropdown).to_have_text(default["district"])
+            open_profile_page.wait_for_timeout(1000)
+
+            # 3. Возвращаем дефолтный город/пункт
+            profile.select_from_dropdown(profile.address_dropdown, default["address"])
+
+            # 4. ОБЯЗАТЕЛЬНО сохраняем, чтобы вернуть профиль в исходное состояние
+            profile.save_changes()
 
         @allure.title("Изменение email для рассылок")
         def test_edit_email_message(self, open_profile_page: Page, app_config):
