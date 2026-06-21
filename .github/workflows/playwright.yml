@@ -24,7 +24,7 @@ jobs:
         pip install -r requirements.txt
 
     - name: Install Playwright Browsers
-      run: npx playwright install chromium --with-deps
+      run: python -m playwright install chromium --with-deps
 
     - name: Run Pytest Automation Suite
       run: |
