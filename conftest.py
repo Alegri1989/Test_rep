@@ -27,8 +27,7 @@ def pytest_runtest_makereport(item, call):
 
 
 def pytest_addoption(parser):
-    """Регистрируем flags проекта."""
-    parser.addoption("--slowmo", action="store", default=0, type=int, help="Замедление действий в мс")
+    pass
 
 
 @pytest.fixture(scope="session", autouse=True)
