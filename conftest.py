@@ -28,7 +28,6 @@ def pytest_runtest_makereport(item, call):
 
 def pytest_addoption(parser):
     """Регистрируем flags проекта."""
-    parser.addoption("--headed", action="store_true", default=False, help="Запуск в видимом режиме")
     parser.addoption("--slowmo", action="store", default=0, type=int, help="Замедление действий в мс")
 
 
