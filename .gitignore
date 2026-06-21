@@ -1,0 +1,14 @@
+# Отчеты и результаты Allure (больше не улетят на GitHub)
+allure-report/
+allure-results/
+
+# Временные файлы кэша PyTest и Python
+.pytest_cache/
+__pycache__/
+*.pyc
+
+# Настройки среды разработки PyCharm
+.idea/
+
+# Папка с видеозаписями тестов Playwright
+videos/
