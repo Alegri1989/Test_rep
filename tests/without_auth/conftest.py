@@ -12,6 +12,7 @@ def run_global_auth():
 @pytest.fixture(scope="function")
 def guest_page(pytestconfig) -> Page:
     """Создает гостевую страницу с десктопным разрешением для стабильности headless режима."""
+    # 🎯 --headed регистрируется плагином pytest-playwright, свой addoption не нужен
     is_headless = not pytestconfig.getoption("headed")
 
     with sync_playwright() as p:

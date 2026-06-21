@@ -11,6 +11,8 @@ def run_global_auth():
 @pytest.fixture(scope="function")
 def guest_page(pytestconfig):
     """Создает чистую страницу браузера и честно принимает куки-плашку."""
+    # 🎯 --headed и --slowmo регистрируются плагином pytest-playwright (см. pyproject.toml),
+    # свой pytest_addoption для них не нужен и не должен объявляться нигде в проекте.
     is_headless = not pytestconfig.getoption("headed")
     slow_mo_val = pytestconfig.getoption("slowmo")
     if slow_mo_val == 0:
