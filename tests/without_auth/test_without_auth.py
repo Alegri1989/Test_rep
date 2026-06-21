@@ -252,7 +252,7 @@ def test_guest_apply_button_disabled_in_detail_page(guest_page: Page):
         vacancy_page.navigate()
         vacancy_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
         vacancy_page.vacancy_title_link.first.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
 
     with allure.step("ОР 1: Верификация заблокированного состояния кнопки внутри карточки"):
         target_btn = vacancy_page.apply_button_in_detail.locator("visible=true").first

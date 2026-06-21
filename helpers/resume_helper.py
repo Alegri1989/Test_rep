@@ -96,4 +96,5 @@ def clear_all_resumes_from_account(page: Page):
         except Exception:
             page.wait_for_timeout(1000)
 
+        resume.delete_resume_modal.wait_for(state="hidden", timeout=5000)
         page.wait_for_load_state("networkidle")

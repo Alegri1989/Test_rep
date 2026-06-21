@@ -1,4 +1,5 @@
 from playwright.sync_api import Page
+from helpers.network_helper import goto_with_retry
 
 
 class LoginPage:
@@ -16,9 +17,9 @@ class LoginPage:
         self.cookie_close_button = page.locator("button.cookie-panel__info_button2")
 
     def navigate(self):
-        """Открывает прямую страницу авторизации."""
+        """Открывает прямую страницу авторизации с устойчивостью к медленной сети."""
         clean_url = self.base_url.replace(" ", "")
-        self.page.goto(clean_url)
+        goto_with_retry(self.page, clean_url, wait_until="load")
 
     def login(self, email: str, password: str):
         """Вход в систему с честным принятием куки и обработкой редиректа."""

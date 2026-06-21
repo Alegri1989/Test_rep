@@ -1,4 +1,5 @@
 from playwright.sync_api import Page
+from helpers.network_helper import goto_with_retry
 
 
 class HelpPage:
@@ -25,6 +26,5 @@ class HelpPage:
         self.download_legal_entity_template_btn = page.locator("a[href*='ec0ozce.docx']")
 
     def navigate(self):
-        """Открывает страницу Помощь и поддержка."""
-        self.page.goto(self.url)
-        self.page.wait_for_load_state("load")
+        """Открывает страницу Помощь и поддержка с устойчивостью к медленной сети."""
+        goto_with_retry(self.page, self.url, wait_until="load")

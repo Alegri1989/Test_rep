@@ -3,6 +3,7 @@ import pytest
 from playwright.sync_api import Page
 from pages.resume_page import ResumePage
 from helpers.resume_helper import fill_and_submit_resume_form, fill_and_submit_required_resume_fields
+from helpers.network_helper import goto_with_retry
 
 
 @pytest.fixture(scope="function")
@@ -13,7 +14,7 @@ def open_create_resume_page(auth_page: Page):
 
     clean_url = resume_list_url.replace(" ", "")
     if auth_page.url != clean_url:
-        auth_page.goto(clean_url, wait_until="domcontentloaded")
+        goto_with_retry(auth_page, clean_url, wait_until="domcontentloaded")
         auth_page.wait_for_load_state("domcontentloaded")
 
     try:
@@ -37,7 +38,7 @@ def prepare_resume_for_publication(auth_page: Page):
 
     clean_url = resume_list_url.replace(" ", "")
     if auth_page.url != clean_url:
-        auth_page.goto(clean_url, wait_until="domcontentloaded")
+        goto_with_retry(auth_page, clean_url, wait_until="domcontentloaded")
         auth_page.wait_for_load_state("domcontentloaded")
 
     try:
@@ -52,7 +53,7 @@ def prepare_resume_for_publication(auth_page: Page):
 
     fill_and_submit_resume_form(auth_page)
 
-    auth_page.goto(clean_url, wait_until="domcontentloaded")
+    goto_with_retry(auth_page, clean_url, wait_until="domcontentloaded")
     auth_page.wait_for_load_state("domcontentloaded")
 
     return auth_page
@@ -66,7 +67,7 @@ def prepare_maximum_published_resumes(auth_page: Page):
 
     clean_url = resume_list_url.replace(" ", "")
     if auth_page.url != clean_url:
-        auth_page.goto(clean_url, wait_until="domcontentloaded")
+        goto_with_retry(auth_page, clean_url, wait_until="domcontentloaded")
         auth_page.wait_for_load_state("domcontentloaded")
 
     while resume.all_unpublish_links.count() > 3:
@@ -84,7 +85,7 @@ def prepare_maximum_published_resumes(auth_page: Page):
             resume.create_resume_button.click()
             auth_page.wait_for_load_state("domcontentloaded")
             fill_and_submit_required_resume_fields(auth_page)
-            auth_page.goto(clean_url, wait_until="domcontentloaded")
+            goto_with_retry(auth_page, clean_url, wait_until="domcontentloaded")
             auth_page.wait_for_load_state("domcontentloaded")
 
         resume.all_publish_buttons.first.click()

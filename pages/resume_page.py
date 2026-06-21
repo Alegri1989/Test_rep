@@ -123,6 +123,7 @@ class ResumePage:
 
         self.last_resume_delete_btn = page.get_by_role("button", name="Удалить").last
         self.popup_confirm_delete_btn = page.get_by_role("button", name="Удалить резюме")
+        self.delete_resume_modal = page.locator("#delete_resume")
 
         self.last_publish_button = page.locator("button[type='button']:has-text('Опубликовать')").last
         self.last_unpublish_button = page.locator("a:has-text('Снять с публикации')").last

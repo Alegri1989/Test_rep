@@ -1,4 +1,5 @@
 from playwright.sync_api import Page
+from helpers.network_helper import goto_with_retry
 
 
 class VacancySearchPage:
@@ -82,10 +83,9 @@ class VacancySearchPage:
         self.wage_rate_to_input = page.locator("#id_wage_rate_to")
 
     def navigate(self):
-        """Чистый переход на страницу поиска вакансий."""
+        """Чистый переход на страницу поиска вакансий с устойчивостью к медленной сети."""
         clean_url = self.url.replace(" ", "")
-        self.page.goto(clean_url)
-        self.page.wait_for_load_state("load")
+        goto_with_retry(self.page, clean_url, wait_until="load")
 
     def open_spoiler_if_hidden(self, title_text: str, target_dropdown):
         """Проверяет видимость фильтра и кликает по его заголовку h4 для раскрытия спойлера."""

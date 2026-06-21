@@ -1,6 +1,7 @@
 import pytest
 from playwright.sync_api import sync_playwright, Page
 from pages.vacancy_search_page import VacancySearchPage
+from helpers.network_helper import goto_with_retry
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -19,7 +20,7 @@ def guest_page(pytestconfig) -> Page:
         is_headless = True  # Если флага нет в конфигурации, запускаем в headless-режиме
 
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"])
+        browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"], channel="chrome")
 
         # Насильно задаем десктопный размер экрана 1920x1080, чтобы верстка ГСЗ не сжималась
         context = browser.new_context(
@@ -27,10 +28,12 @@ def guest_page(pytestconfig) -> Page:
             viewport={"width": 1920, "height": 1080}
         )
         page = context.new_page()
+        # 🐢 Увеличенный дефолтный таймаут навигации/действий — запас для медленной сети
+        page.set_default_navigation_timeout(45000)
+        page.set_default_timeout(15000)
 
-        # Шаг 1: Заходим на главную страницу портала
-        page.goto("https://gsz.gov.by")
-        page.wait_for_load_state("load")
+        # Шаг 1: Заходим на главную страницу портала (с retry на случай подтормаживания сайта)
+        goto_with_retry(page, "https://gsz.gov.by", wait_until="load")
 
         # Шаг 2: Принимаем куки один раз на главной
         try:

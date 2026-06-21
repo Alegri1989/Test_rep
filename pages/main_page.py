@@ -1,4 +1,5 @@
 from playwright.sync_api import Page
+from helpers.network_helper import goto_with_retry
 
 
 class MainPage:
@@ -66,8 +67,8 @@ class MainPage:
         )
 
     def navigate(self):
-        """Открывает главную страницу портала."""
-        self.page.goto(self.base_url)
+        """Открывает главную страницу портала с устойчивостью к медленной сети."""
+        goto_with_retry(self.page, self.base_url, wait_until="load")
         self.page.wait_for_load_state("networkidle")
 
     def click_employer_logo_via_js(self, img_name: str):

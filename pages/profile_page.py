@@ -1,6 +1,8 @@
 from playwright.sync_api import Page
 import logging
 
+from helpers.network_helper import retry_action
+
 class ProfilePage:
     def __init__(self, page: Page):
         self.page = page
@@ -64,18 +66,29 @@ class ProfilePage:
         locator.press_sequentially(text, delay=30)
 
     def select_from_dropdown(self, dropdown_locator, option_text: str):
-        """Выбор значения из Select2 с фиксацией фокуса и ожидания скриптов плагина."""
-        logging.debug(f"Действие: Выбор опции '{option_text}' из выпадающего списка")
-        dropdown_locator.click()
-        self.search_popup.wait_for(state="visible", timeout=5000)
-        self.search_popup.press_sequentially(option_text, delay=100)
-        self.page.wait_for_timeout(1000)
+        """Выбор значения из Select2 с фиксацией фокуса и ожидания скриптов плагина.
 
-        target_option = self.page.locator("li.select2-results__option", has_text=option_text).first
-        target_option.wait_for(state="visible", timeout=3500)
-        target_option.focus()
-        target_option.click()
-        self.page.wait_for_timeout(600)
+        Каскадные списки (район зависит от региона, адрес — от района) подгружают
+        опции через AJAX, который на медленном продакшен-сайте не всегда успевает
+        отработать. Поэтому при таймауте поиска опции список переоткрывается и
+        попытка повторяется.
+        """
+        logging.debug(f"Действие: Выбор опции '{option_text}' из выпадающего списка")
+
+        def _pick_option():
+            self.page.keyboard.press("Escape")
+            dropdown_locator.click()
+            self.search_popup.wait_for(state="visible", timeout=5000)
+            self.search_popup.press_sequentially(option_text, delay=100)
+            self.page.wait_for_timeout(1000)
+
+            target_option = self.page.locator("li.select2-results__option", has_text=option_text).first
+            target_option.wait_for(state="visible", timeout=3500)
+            target_option.focus()
+            target_option.click()
+            self.page.wait_for_timeout(600)
+
+        retry_action(_pick_option, self.page, retries=3, label=f"выбор '{option_text}'")
 
     def select_gender(self, gender_code: str):
         """Выбирает пол на форме, кликая строго по тексту внутри лейбла."""
@@ -88,13 +101,23 @@ class ProfilePage:
         self.page.wait_for_timeout(500)
 
     def save_changes(self):
-        """Сбрасывает фокус, дает бэкенду сайта время переварить AJAX-валидацию и сохраняет форму."""
+        """Сбрасывает фокус, дает бэкенду сайта время переварить AJAX-валидацию и сохраняет форму.
+
+        Сохранение на продакшен-сайте иногда отвечает дольше стандартных 30с —
+        клик повторяется с увеличенным таймаутом, если первая попытка не успела
+        дождаться завершения навигации/ответа.
+        """
         logging.debug("Действие: Нажатие кнопки 'Сохранить' изменения профиля")
         self.page.locator("h1, h2, label").first.click(force=True)
         self.page.wait_for_timeout(1000)
-        self.save_button.click()
+
         final_alert = self.page.locator("div.dj-message.alert-success, div.dj-message.alert-danger")
-        final_alert.wait_for(state="visible", timeout=10000)
+
+        def _click_save():
+            self.save_button.click(timeout=45000)
+            final_alert.wait_for(state="visible", timeout=15000)
+
+        retry_action(_click_save, self.page, retries=3, label="сохранение формы профиля")
         self.page.wait_for_timeout(500)
 
     def set_date_of_birth(self, date_str: str):
