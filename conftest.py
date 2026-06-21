@@ -27,16 +27,19 @@ def pytest_runtest_makereport(item, call):
 
 
 # 🎯 Флаги --headed и --slowmo НЕ регистрируем тут специально!
-# Их уже регистрирует плагин pytest-playwright (он есть в зависимостях проекта),
-# поэтому свой pytest_addoption для этих имён добавлять нельзя — будет
-# "ArgumentError: conflicting option string" при старте pytest.
-# pytestconfig.getoption("headed") / ("slowmo") работают и без этого блока.
+# Их регистрирует плагин pytest-playwright, когда он установлен в окружении
+# (так в CI — requirements.txt ставится с нуля). Но локально окружение может
+# отличаться (плагин не доустановлен/не подхватился) — поэтому чтение этих
+# опций ниже всегда обёрнуто в try/except, чтобы код работал в обоих случаях.
 
 
 @pytest.fixture(scope="session", autouse=True)
 def run_global_auth(pytestconfig):
     """Глобальная фикстура для автоматической авторизации."""
-    is_headless = not pytestconfig.getoption("headed")
+    try:
+        is_headless = not pytestconfig.getoption("headed")
+    except ValueError:
+        is_headless = True
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"])
@@ -64,12 +67,17 @@ def run_global_auth(pytestconfig):
 @pytest.fixture(scope="function")
 def auth_page(pytestconfig, request):
     """Создает чистую страницу браузера и крепит артефакты в Allure."""
-    is_headless = not pytestconfig.getoption("headed")
+    try:
+        is_headless = not pytestconfig.getoption("headed")
+    except ValueError:
+        is_headless = True
 
-    # 🎯 Если в консоли слоумо не указан (равен 0), ставим базовые 400 мс для стабильности сьюта
-    slow_mo_val = pytestconfig.getoption("slowmo")
-    if slow_mo_val == 0:
-        slow_mo_val = 400
+    slow_mo_val = 400
+    try:
+        if pytestconfig.getoption("slowmo") != 0:
+            slow_mo_val = pytestconfig.getoption("slowmo")
+    except ValueError:
+        pass
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"], slow_mo=slow_mo_val)

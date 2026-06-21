@@ -12,8 +12,11 @@ def run_global_auth():
 @pytest.fixture(scope="function")
 def guest_page(pytestconfig) -> Page:
     """Создает гостевую страницу с десктопным разрешением для стабильности headless режима."""
-    # 🎯 --headed регистрируется плагином pytest-playwright, свой addoption не нужен
-    is_headless = not pytestconfig.getoption("headed")
+    # 🛡️ Безопасное чтение флага headed для совместимости дома и в GitHub Actions
+    try:
+        is_headless = not pytestconfig.getoption("headed")
+    except ValueError:
+        is_headless = True  # Если флага нет в конфигурации, запускаем в headless-режиме
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"])
