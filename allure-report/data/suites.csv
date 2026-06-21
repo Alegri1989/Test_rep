@@ -1,3 +1,0 @@
-"DESCRIPTION","DURATION IN MS","NAME","PARENT SUITE","START TIME","STATUS","STOP TIME","SUB SUITE","SUITE","TEST CLASS","TEST METHOD"
-"","9385","Тест-кейс 1: Заказ товара бренда Polo, оплата и проверка текста инвойса","","2026-06-06","passed","2026-06-06","","test_order_flow","",""
-"","10938","Тест-кейс 2: Заказ товаров разных брендов (Polo и Biba), оплата и проверка инвойса","","2026-06-06","passed","2026-06-06","","test_order_flow","",""
