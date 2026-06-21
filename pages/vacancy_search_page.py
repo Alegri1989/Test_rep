@@ -62,6 +62,18 @@ class VacancySearchPage:
         # Селекторы карточек результатов поиска
         self.vacancy_title_link = page.locator("a.debounced-link")
 
+        # Кнопка "Контакты" на карточке вакансии (ведет на якорь contact-info-anchor детальной страницы)
+        self.vacancy_contacts_button = page.locator("a[href*='detail-public/#contact-info-anchor']")
+
+        # Заблокированная для гостя кнопка "Откликнуться" (используется и в списке, и на детальной странице -
+        # одна и та же разметка, отличие только в том, на какой странице сейчас находится page)
+        self.apply_button_in_list = page.locator(
+            "a[title='Только соискатель может откликнуться на вакансию']"
+        )
+        self.apply_button_in_detail = page.locator(
+            "a[title='Только соискатель может откликнуться на вакансию']"
+        )
+
         # Дополнительные поля
         self.salary_min_input = page.locator("#id_salary_min")
         self.search_period_dropdown = page.locator("#id_search_period")

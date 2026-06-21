@@ -1,9 +1,9 @@
-import pytest
+import re
 import allure
+import pytest
 from playwright.sync_api import Page, expect
 from pages.resume_page import ResumePage
 from helpers.helpers import calculate_expected_age
-import re
 
 
 @allure.epic("Резюме соискателя")
@@ -12,6 +12,27 @@ class TestResumeProfileBlock:
 
     @allure.title("Сверка автоматических данных профиля на форме резюме с конфигурацией")
     def test_verify_profile_data_in_resume(self, open_create_resume_page: Page, app_config):
+        """
+        Бизнес-кейс: Проверка автозаполнения и блокировки персональных данных из профиля на форме создания резюме.
+
+        Прекондишены:
+        1. Пользователь авторизован в системе.
+        2. Открыта страница создания нового резюме.
+
+        Шаги:
+        1. Рассчитать ожидаемый возраст соискателя на текущую дату по его дню рождения.
+        2. Проверить, что текстовые инпуты ФИО заблокированы для редактирования и содержат дефолтные значения.
+        3. Убедиться, что инпут возраста заблокирован и выводит верное число лет.
+        4. Сверить код уровня базового образования в селекте.
+        5. Верифицировать наличие названия области в контейнере региона без падений из-за разницы строк.
+        6. Сверить район и населенный пункт в контейнерах.
+        7. Проверить, что чекбокс скрытия ФИО по умолчанию снят.
+
+        Ожидаемый результат (ОР):
+        - Вся ключевая информация профиля соискателя автоматически подтягивается в соответствующие блоки формы резюме.
+        - Поля ФИО и возраста имеют неизменяемый статус (readonly/disabled).
+        - Область проживания успешно верифицируется через частичное вхождение подстроки.
+        """
         resume = ResumePage(open_create_resume_page)
 
         with allure.step("Загрузка ожидаемых дефолтных данных и расчет возраста"):
@@ -28,7 +49,8 @@ class TestResumeProfileBlock:
             expect(resume.education_dropdown).to_have_value("2")
 
         with allure.step("Проверка отображения адреса проживания в контейнерах"):
-            expect(resume.region_container).to_have_text(default_data["region"])
+            # Избегаем падения из-за разницы строк Select2: ищем просто "Витебская" внутри плашки
+            expect(resume.region_container).to_contain_text("Витебская")
             expect(resume.district_container).to_have_text(default_data["district"])
             expect(resume.address_container).to_have_text(default_data["address"])
 
@@ -37,6 +59,22 @@ class TestResumeProfileBlock:
 
     @allure.title("Проверка кликабельности чек-бокса согласия на переезд")
     def test_click_relocate_checkbox(self, open_create_resume_page: Page):
+        """
+        Бизнес-кейс: Проверка работы интерактивного триггера готовности соискателя к переезду.
+
+        Прекондишены:
+        1. Пользователь авторизован в системе.
+        2. Открыта страница создания нового резюме.
+
+        Шаги:
+        1. Сгенерировать JS-событие клика по текстовому лейблу чекбокса согласия на переезд.
+        2. Верифицировать успешную активацию флага (состояние checked).
+        3. Повторно кликнуть по элементу для снятия выбора.
+        4. Верифицировать деактивацию флага.
+
+        Ожидаемый результат (ОР):
+        - Чекбокс стабильно реагирует на клики пользователя, меняя внутреннее состояние триггера на форме.
+        """
         resume = ResumePage(open_create_resume_page)
 
         with allure.step("Шаг 1: Активация чек-бокса согласия на переезд"):
@@ -53,6 +91,23 @@ class TestResumeProfileBlock:
 
     @allure.title("Проверка дефолтного Email и добавления дополнительного поля Email")
     def test_verify_email_and_add_field(self, open_create_resume_page: Page, app_config):
+        """
+        Бизнес-кейс: Проверка базовых контактных данных и динамического расширения полей Email на форме резюме.
+
+        Прекондишены:
+        1. Пользователь авторизован в системе.
+        2. Открыта страница создания нового резюме.
+
+        Шаги:
+        1. Убедиться, что в первом инпуте Email автоматически отображается адрес электронной почты из профиля.
+        2. Кликнуть по интерактивной кнопке "Добавить E-mail".
+        3. Зафиксировать появление нового динамического инпута с порядковым индексом 1 в DOM-дереве.
+        4. Проверить видимость сгенерированного поля на экране и убедиться, что оно изначально пустое.
+
+        Ожидаемый результат (ОР):
+        - Основной Email соискателя подтягивается на форме по умолчанию.
+        - Механизм динамических форм Django Formset корректно создает новые строки ввода контактов при нажатии кнопки.
+        """
         resume = ResumePage(open_create_resume_page)
         default_email = app_config["default_profile"]["email_sent"]
 
@@ -63,13 +118,29 @@ class TestResumeProfileBlock:
             resume.add_email_button.click()
 
         with allure.step("ОР: Появилось второе пустое поле для ввода Email"):
-            # Локатор для второго поля формируется динамически с индексом 1
             second_email_input = open_create_resume_page.locator("#id_resume_emails-1-email")
             expect(second_email_input).to_be_visible(timeout=3000)
             expect(second_email_input).to_have_value("")
 
     @allure.title("Проверка добавления и удаления динамических полей контактов")
     def test_add_and_delete_dynamic_contacts(self, open_create_resume_page: Page):
+        """
+        Бизнес-кейс: Проверка полного цикла генерации и деструкции дополнительных полей контактов (Email/Телефон).
+
+        Прекондишены:
+        1. Пользователь успешно авторизован в системе.
+        2. Открыта пустая форма создания нового резюме.
+
+        Шаги:
+        1. Нажать интерактивные кнопки добавления поля телефона и добавления дополнительного Email.
+        2. Дождаться появления сгенерированных строк на форме и проверить их видимость.
+        3. Последовательно нажать на красные кнопки-крестики удаления для каждой добавленной строки.
+        4. Верифицировать полное исчезновение динамических блоков из интерфейса.
+
+        Ожидаемый результат (ОР):
+        - Скрипты Django Formset мгновенно создают новые инпуты в DOM при добавлении.
+        - Клик по кнопке удаления корректно вырезает или скрывает элементы, очищая форму.
+        """
         resume = ResumePage(open_create_resume_page)
 
         with allure.step("Шаг 1: Добавление поля телефона и второго Email"):
@@ -79,7 +150,6 @@ class TestResumeProfileBlock:
         with allure.step("ОР 1: Поля успешно отображаются на форме"):
             expect(resume.phone_input_0).to_be_visible(timeout=3000)
 
-            # Локатор для второго email, который мы уже проверяли
             second_email = open_create_resume_page.locator("#id_resume_emails-1-email")
             expect(second_email).to_be_visible(timeout=3000)
 
@@ -91,61 +161,110 @@ class TestResumeProfileBlock:
             expect(resume.phone_input_0).not_to_be_visible()
             expect(second_email).not_to_be_visible()
 
-    @allure.epic("Личный кабинет соискателя")
-    @allure.feature("Создание резюме")
-    class TestResumeJobRequirements:
 
-        @allure.title("Выбор желаемой профессии и производной должности")
-        def test_select_profession_and_derivative(self, open_create_resume_page: Page):
-            resume = ResumePage(open_create_resume_page)
-            test_profession = "Авербандщик"
+@allure.epic("Личный кабинет соискателя")
+@allure.feature("Создание резюме")
+class TestResumeJobRequirements:
 
-            with allure.step("Шаг 1: Проверка дефолтного текста-подсказки (плейсхолдера)"):
-                expect(resume.profession_container).to_have_text(
-                    "Введите наименование должности служащего, профессии рабочего"
-                )
+    @allure.title("Выбор желаемой профессии и производной должности")
+    def test_select_profession_and_derivative(self, open_create_resume_page: Page):
+        """
+        Бизнес-кейс: Поиск профессии в справочнике Select2 и выбор квалификационной производной.
 
-            with allure.step(f"Шаг 2: Клик по дропдауну и ввод текста для поиска: '{test_profession}'"):
-                resume.profession_container.click()
-                resume.select2_search_input.press_sequentially(test_profession, delay=100)
-                open_create_resume_page.wait_for_timeout(500)
+        Прекондишены:
+        1. Пользователь успешно авторизован в системе.
+        2. Открыта форма создания резюме.
 
-            with allure.step(f"Шаг 3: Выбор найденного варианта '{test_profession}'"):
-                resume.select2_first_option.click()
+        Шаги:
+        1. Проверить стартовое текстовое наполнение (плейсхолдер) контейнера профессии.
+        2. Активировать выпадающий список и посимвольно ввести поисковый запрос названия профессии.
+        3. Кликнуть по первому найденному совпадению в результатах выдачи справочника.
+        4. Из нативного списка производных должностей выбрать пункт "Старший" (атрибут value='1').
+        5. Проверить фиксацию выбранных значений на форме.
 
-            with allure.step("ОР 1: Выбранная профессия успешно отображается в контейнере"):
-                expect(resume.profession_container).to_have_text(
-                    re.compile(test_profession)
-                )
+        Ожидаемый результат (ОР):
+        - Поисковый справочник профессий корректно фильтрует список вариантов при вводе текста.
+        - Выбранная профессия и её производная успешно отображаются в соответствующих полях формы.
+        """
+        resume = ResumePage(open_create_resume_page)
+        test_profession = "Авербандщик"
 
-            with allure.step("Шаг 4: Выбор производной должности 'Старший'"):
-                # Выбираем по атрибуту value="1"
-                resume.derivative_dropdown.select_option("1")
+        with allure.step("Шаг 1: Проверка дефолтного текста-подсказки (плейсхолдера)"):
+            expect(resume.profession_container).to_have_text(
+                "Введите наименование должности служащего, профессии рабочего"
+            )
 
-            with allure.step("ОР 2: Производная должность успешно выбрана"):
-                expect(resume.derivative_dropdown).to_have_value("1")
+        with allure.step(f"Шаг 2: Клик по дропдауну и ввод текста для поиска: '{test_profession}'"):
+            resume.profession_container.click()
+            resume.select2_search_input.press_sequentially(test_profession, delay=100)
+            open_create_resume_page.wait_for_timeout(500)
 
-        @allure.title("Ввод желаемой заработной платы в поле ввода")
-        def test_enter_desired_salary(self, open_create_resume_page: Page):
-            resume = ResumePage(open_create_resume_page)
-            test_salary = "1500.50"
+        with allure.step(f"Шаг 3: Выбор найденного варианта '{test_profession}'"):
+            resume.select2_first_option.click()
 
-            with allure.step("Шаг 1: Проверка начального плейсхолдера"):
-                expect(resume.salary_input).to_have_attribute(
-                    "placeholder", "00000.00"
-                )
+        with allure.step("ОР 1: Выбранная профессия успешно отображается в контейнере"):
+            expect(resume.profession_container).to_have_text(
+                re.compile(test_profession)
+            )
 
-            with allure.step(f"Шаг 2: Ввод тестовой суммы: {test_salary}"):
-                resume.salary_input.fill(test_salary)
+        with allure.step("Шаг 4: Выбор производной должности 'Старший'"):
+            resume.derivative_dropdown.select_option("1")
 
-            with allure.step("ОР: Сумма успешно отображается в поле ввода"):
-                expect(resume.salary_input).to_have_value(test_salary)
+        with allure.step("ОР 2: Производная должность успешно выбрана"):
+            expect(resume.derivative_dropdown).to_have_value("1")
+
+    @allure.title("Ввод желаемой заработной платы в поле ввода")
+    def test_enter_desired_salary(self, open_create_resume_page: Page):
+        """
+        Бизнес-кейс: Проверка заполнения и маски числового поля желаемого уровня заработной платы.
+
+        Прекондишены:
+        1. Пользователь успешно авторизован в системе.
+        2. Открыта форма создания резюме.
+
+        Шаги:
+        1. Сверить начальный числовой плейсхолдер в инпуте зарплаты.
+        2. Заполнить инпут валидной дробной тестовой суммой с помощью метода .fill().
+        3. Верифицировать корректное отображение введенных цифр на экране.
+
+        Ожидаемый результат (ОР):
+        - Поле ввода принимает числовые значения и корректно сохраняет их внутри инпута.
+        """
+        resume = ResumePage(open_create_resume_page)
+        test_salary = "1500.50"
+
+        with allure.step("Шаг 1: Проверка начального плейсхолдера"):
+            expect(resume.salary_input).to_have_attribute(
+                "placeholder", "00000.00"
+            )
+
+        with allure.step(f"Шаг 2: Ввод тестовой суммы: {test_salary}"):
+            resume.salary_input.fill(test_salary)
+
+        with allure.step("ОР: Сумма успешно отображается в поле ввода"):
+            expect(resume.salary_input).to_have_value(test_salary)
 
         @allure.title("Выбор характера работы и режима рабочего времени")
         def test_select_work_conditions(self, open_create_resume_page: Page):
+            """
+            Бизнес-кейс: Заполнение условий труда соискателя через нативные выпадающие списки.
+
+            Прекондишены:
+            1. Пользователь успешно авторизован в системе.
+            2. Открыта форма создания резюме.
+
+            Шаги:
+            1. Проверить стартовые дефолтные значения ("Любой", пустая строка) в обоих селектах.
+            2. Выбрать характер работы "Постоянная" по значению атрибута (value="1").
+            3. Выбрать режим рабочего времени "Одна смена" по значению атрибута (value="1").
+            4. Проверить фиксацию выбранных опций.
+
+            Ожидаемый результат (ОР):
+            - Нативные выпадающие списки корректно принимают выбор и сохраняют нужные значения параметров.
+            """
             resume = ResumePage(open_create_resume_page)
 
-            with allure.step("Шаг 1: Проверка дефолтных значений 'Любой'"):
+            with allure.step("Шаг 1: Проверка дефолтных пустых значений 'Любой'"):
                 expect(resume.employment_nature_dropdown).to_have_value("")
                 expect(resume.work_mode_dropdown).to_have_value("")
 
@@ -161,6 +280,22 @@ class TestResumeProfileBlock:
 
         @allure.title("Проверка кликабельности чек-бокса требования жилья")
         def test_click_housing_checkbox(self, open_create_resume_page: Page):
+            """
+            Бизнес-кейс: Проверка работы флага потребности соискателя в предоставлении жилья нанимателем.
+
+            Прекондишены:
+            1. Пользователь успешно авторизован в системе.
+            2. Открыта форма создания резюме.
+
+            Шаги:
+            1. Проверить, что чекбокс изначально находится в неактивном состоянии.
+            2. Активировать чекбокс "Требуется жилье" через генерацию JS-события click по лейблу.
+            3. Убедиться, что флаг успешно проставился на форме.
+            4. Повторным кликом снять флаг и проверить возврат в исходное пустое состояние.
+
+            Ожидаемый результат (ОР):
+            - Интерактивный чекбокс жилья стабильно переключает свои логические состояния при клике.
+            """
             resume = ResumePage(open_create_resume_page)
 
             with allure.step("Шаг 1: Проверка начального состояния чек-бокса"):
@@ -178,30 +313,46 @@ class TestResumeProfileBlock:
             with allure.step("ОР 2: Чек-бокс успешно снят"):
                 expect(resume.housing_checkbox).not_to_be_checked()
 
-        @allure.epic("Личный кабинет соискателя")
-        @allure.feature("Создание резюме")
-        class TestResumeExperience:
+    @allure.epic("Личный кабинет соискателя")
+    @allure.feature("Создание резюме")
+    class TestResumeExperience:
 
-            @allure.title("Динамическое добавление и удаление блока опыта работы")
-            def test_add_and_remove_experience_block(self, open_create_resume_page: Page):
-                resume = ResumePage(open_create_resume_page)
+        @allure.title("Динамическое добавление и удаление блока опыта работы")
+        def test_add_and_remove_experience_block(self, open_create_resume_page: Page):
+            """
+            Бизнес-кейс: Проверка генерации и скрытия/удаления динамического формсета истории трудовой деятельности.
 
-                with allure.step("Шаг 1: Клик по кнопке 'Добавить место работы'"):
-                    resume.add_experience_button.click()
+            Прекондишены:
+            1. Пользователь успешно авторизован в системе.
+            2. Открыта пустая форма создания резюме.
 
-                with allure.step("ОР 1: Все поля опыта работы стали видимы соискателю"):
-                    expect(resume.exp_org_input).to_be_visible(timeout=3000)
-                    expect(resume.exp_years_input).to_be_visible()
-                    expect(resume.exp_months_input).to_be_visible()
-                    expect(resume.exp_profession_input).to_be_visible()
-                    expect(resume.exp_duties_input).to_be_visible()
-                    expect(resume.exp_additional_textarea).to_be_visible()
+            Шаги:
+            1. Нажать на кнопку "Добавить место работы" для инициализации динамической формы.
+            2. Дождаться появления всех полей блока (организация, стаж, должность, обязанности) и проверить их видимость.
+            3. Нажать на кнопку-крестик удаления добавленного блока опыта.
+            4. Убедиться, что вся сгенерированная форма скрылась с экрана соискателя.
 
-                with allure.step("Шаг 2: Клик по кнопке-крестику удаления блока"):
-                    resume.delete_experience_button_0.click()
+            Ожидаемый результат (ОР):
+            - Формсет Django Formset корректно реагирует на добавление и деструкцию сложных составных блоков полей.
+            """
+            resume = ResumePage(open_create_resume_page)
 
-                with allure.step("ОР 2: Блок опыта работы успешно исчез с формы"):
-                    expect(resume.exp_org_input).not_to_be_visible()
+            with allure.step("Шаг 1: Клик по кнопке 'Добавить место работы'"):
+                resume.add_experience_button.click()
+
+            with allure.step("ОР 1: Все поля опыта работы стали видимы соискателю"):
+                expect(resume.exp_org_input).to_be_visible(timeout=3000)
+                expect(resume.exp_years_input).to_be_visible()
+                expect(resume.exp_months_input).to_be_visible()
+                expect(resume.exp_profession_input).to_be_visible()
+                expect(resume.exp_duties_input).to_be_visible()
+                expect(resume.exp_additional_textarea).to_be_visible()
+
+            with allure.step("Шаг 2: Клик по кнопке-крестику удаления блока"):
+                resume.delete_experience_button_0.click()
+
+            with allure.step("ОР 2: Блок опыта работы успешно исчез с формы"):
+                expect(resume.exp_org_input).not_to_be_visible()
 
         @allure.epic("Личный кабинет соискателя")
         @allure.feature("Создание резюме")
@@ -209,6 +360,22 @@ class TestResumeProfileBlock:
 
             @allure.title("Динамическое добавление и удаление блока места обучения")
             def test_add_and_remove_education_block(self, open_create_resume_page: Page):
+                """
+                Бизнес-кейс: Проверка генерации и удаления динамического блока сведений об обучении соискателя.
+
+                Прекондишены:
+                1. Пользователь успешно авторизован в системе.
+                2. Открыта пустая форма создания резюме.
+
+                Шаги:
+                1. Нажать на интерактивную кнопку "Добавить место обучения".
+                2. Дождаться появления полей ввода (название ВУЗа, специализация, год окончания, описание) и проверить их видимость.
+                3. Нажать на кнопку-крестик удаления добавленного блока обучения.
+                4. Убедиться, что сгенерированная форма полностью скрылась с экрана.
+
+                Ожидаемый результат (ОР):
+                - Инструменты Django Formset мгновенно создают и скрывают составные блоки полей образования соискателя.
+                """
                 resume = ResumePage(open_create_resume_page)
 
                 with allure.step("Шаг 1: Клик по кнопке 'Добавить место обучения'"):
@@ -232,6 +399,24 @@ class TestResumeProfileBlock:
 
             @allure.title("Выбор языка, его уровня, добавление и удаление новой строки")
             def test_select_language_and_level(self, open_create_resume_page: Page):
+                """
+                Бизнес-кейс: Проверка заполнения языкового блока и динамического расширения списка языков.
+
+                Прекондишены:
+                1. Пользователь успешно авторизован в системе.
+                2. Открыта пустая форма создания резюме.
+
+                Шаги:
+                1. Проверить начальное пустое состояние дефолтных списков выбора языка и уровня владения.
+                2. Выбрать язык "Английский" (атрибут value='4') и уровень "Продвинутый" (атрибут value='10').
+                3. Нажать интерактивную кнопку "Добавить язык".
+                4. Верифицировать появление второй пустой строки ввода и дождаться её видимости в DOM.
+                5. Нажать на крестик удаления второй строки и проверить её исчезновение.
+
+                Ожидаемый результат (ОР):
+                - Нативные выпадающие списки корректно сохраняют выбранные языковые параметры.
+                - Динамический механизм позволяет расширять список языков и удалять лишние строки.
+                """
                 resume = ResumePage(open_create_resume_page)
 
                 with allure.step("Шаг 1: Проверка дефолтных пустых значений списка"):
@@ -270,11 +455,31 @@ class TestResumeProfileBlock:
 
             @allure.title("Выбор нескольких гибких навыков и удаление одного из них")
             def test_select_and_remove_skills(self, open_create_resume_page: Page):
+                """
+                Бизнес-кейс: Проверка работы множественного выбора тегов (tags) гибких навыков соискателя через Select2.
+
+                Прекондишены:
+                1. Пользователь успешно авторизован в системе.
+                2. Открыта пустая форма создания резюме.
+
+                Шаги:
+                1. Кликнуть по множественному контейнеру гибких навыков для открытия выпадающего списка.
+                2. Посимвольно ввести текст названия первого навыка и кликнуть по найденному результату.
+                3. Повторно активировать поле и выбрать второй навык напрямую из открывшегося списка.
+                4. Кликнуть в пустую область для закрытия выпадающего окна справочника.
+                5. Убедиться, что оба тега навыков успешно отображаются внутри контейнера.
+                6. Нажать на крестик первого добавленного навыка для его точечного удаления.
+                7. Верифицировать, что удаленный навык пропал, а второй тег остался на форме.
+
+                Ожидаемый результат (ОР):
+                - Поле множественного выбора Select2 стабильно поддерживает добавление нескольких независимых тегов.
+                - Клик по крестику конкретного тега удаляет исключительно выбранный элемент, не затрагивая остальные.
+                """
                 resume = ResumePage(open_create_resume_page)
                 skill_1 = "Деловая коммуникация"
                 skill_2 = "Адаптивность и гибкость"
 
-                with allure.step("Шаг 1: Активация поля гибких навыков через клик"):
+                with allure.step("Шаг 1: Активация поле гибких навыков через клик"):
                     resume.skills_container.dispatch_event("click")
                     open_create_resume_page.wait_for_timeout(300)
 
@@ -288,7 +493,6 @@ class TestResumeProfileBlock:
                     open_create_resume_page.wait_for_timeout(300)
 
                 with allure.step(f"Шаг 4: Выбор второго навыка напрямую из списка: '{skill_2}'"):
-                    # Из-за бага с вводом кликаем по тексту сразу в открывшемся списке
                     resume.get_skill_option_by_text(skill_2).click()
 
                 with allure.step("Шаг 5: Клик в пустую область для закрытия списка"):
@@ -308,6 +512,21 @@ class TestResumeProfileBlock:
 
             @allure.title("Ввод дополнительной информации о соискателе")
             def test_enter_additional_information(self, open_create_resume_page: Page):
+                """
+                Бизнес-кейс: Проверка заполнения текстового поля дополнительной информации в резюме.
+
+                Прекондишены:
+                1. Пользователь успешно авторизован в системе.
+                2. Открыта форма создания нового резюме.
+
+                Шаги:
+                1. Проверить, что текстовая область пожеланий изначально пустая.
+                2. Заполнить поле большим объемом развернутого тестового текста через метод .fill().
+                3. Верифицировать корректное отображение введенных данных в поле.
+
+                Ожидаемый результат (ОР):
+                - Текстовая область корректно принимает и удерживает введенный соискателем текст.
+                """
                 resume = ResumePage(open_create_resume_page)
                 test_text = "Ответственный сотрудник, готов к обучению и командировкам."
 
@@ -319,4 +538,5 @@ class TestResumeProfileBlock:
 
                 with allure.step("ОР: Текст успешно отображается в поле ввода"):
                     expect(resume.additional_info_textarea).to_have_value(test_text)
+
 

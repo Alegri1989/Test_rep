@@ -13,18 +13,18 @@ def open_create_resume_page(auth_page: Page):
 
     clean_url = resume_list_url.replace(" ", "")
     if auth_page.url != clean_url:
-        auth_page.goto(clean_url)
-        auth_page.wait_for_load_state("load")
+        auth_page.goto(clean_url, wait_until="domcontentloaded")
+        auth_page.wait_for_load_state("domcontentloaded")
 
     try:
         resume_page.create_resume_button.wait_for(state="visible", timeout=3000)
     except Exception:
-        auth_page.reload()
-        auth_page.wait_for_load_state("load")
+        auth_page.reload(wait_until="domcontentloaded")
+        auth_page.wait_for_load_state("domcontentloaded")
         resume_page.create_resume_button.wait_for(state="visible", timeout=10000)
 
     resume_page.create_resume_button.click()
-    auth_page.wait_for_load_state("load")
+    auth_page.wait_for_load_state("domcontentloaded")
 
     return auth_page
 
@@ -37,23 +37,23 @@ def prepare_resume_for_publication(auth_page: Page):
 
     clean_url = resume_list_url.replace(" ", "")
     if auth_page.url != clean_url:
-        auth_page.goto(clean_url)
-        auth_page.wait_for_load_state("load")
+        auth_page.goto(clean_url, wait_until="domcontentloaded")
+        auth_page.wait_for_load_state("domcontentloaded")
 
     try:
         resume.create_resume_button.wait_for(state="visible", timeout=3000)
     except Exception:
-        auth_page.reload()
-        auth_page.wait_for_load_state("load")
+        auth_page.reload(wait_until="domcontentloaded")
+        auth_page.wait_for_load_state("domcontentloaded")
         resume.create_resume_button.wait_for(state="visible", timeout=10000)
 
     resume.create_resume_button.click()
-    auth_page.wait_for_load_state("load")
+    auth_page.wait_for_load_state("domcontentloaded")
 
     fill_and_submit_resume_form(auth_page)
 
-    auth_page.goto(clean_url)
-    auth_page.wait_for_load_state("load")
+    auth_page.goto(clean_url, wait_until="domcontentloaded")
+    auth_page.wait_for_load_state("domcontentloaded")
 
     return auth_page
 
@@ -66,15 +66,15 @@ def prepare_maximum_published_resumes(auth_page: Page):
 
     clean_url = resume_list_url.replace(" ", "")
     if auth_page.url != clean_url:
-        auth_page.goto(clean_url)
-        auth_page.wait_for_load_state("load")
+        auth_page.goto(clean_url, wait_until="domcontentloaded")
+        auth_page.wait_for_load_state("domcontentloaded")
 
     while resume.all_unpublish_links.count() > 3:
         resume.all_unpublish_links.first.click()
-        auth_page.wait_for_load_state("load")
+        auth_page.wait_for_load_state("domcontentloaded")
         resume.all_delete_buttons.first.click()
         resume.popup_confirm_delete_btn.click()
-        auth_page.wait_for_load_state("load")
+        auth_page.wait_for_load_state("domcontentloaded")
 
     while resume.all_unpublish_links.count() < 3:
         # Даем DOM-дереву секунду на стабилизацию перед подсчетом динамических кнопок
@@ -82,14 +82,14 @@ def prepare_maximum_published_resumes(auth_page: Page):
 
         if resume.all_publish_buttons.count() == 0:
             resume.create_resume_button.click()
-            auth_page.wait_for_load_state("load")
+            auth_page.wait_for_load_state("domcontentloaded")
             fill_and_submit_required_resume_fields(auth_page)
-            auth_page.goto(clean_url)
-            auth_page.wait_for_load_state("load")
+            auth_page.goto(clean_url, wait_until="domcontentloaded")
+            auth_page.wait_for_load_state("domcontentloaded")
 
         resume.all_publish_buttons.first.click()
         resume.modal_publish_submit.wait_for(state="visible", timeout=5000)
         resume.modal_publish_submit.click()
-        auth_page.wait_for_load_state("load")
+        auth_page.wait_for_load_state("domcontentloaded")
 
     return auth_page

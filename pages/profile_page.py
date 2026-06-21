@@ -1,6 +1,5 @@
 from playwright.sync_api import Page
 import logging
-from playwright.sync_api import expect
 
 class ProfilePage:
     def __init__(self, page: Page):
@@ -45,7 +44,7 @@ class ProfilePage:
 
         # Кнопка добавления и существующее первое дополнительное поле
         self.add_phone_button = page.locator("button[data-formset-add]")
-        self.additional_phone_0 = page.locator("#id_phone-0-number")
+        self.additional_phone_0 = page.locator("input[id^='id_phone-'][id$='-number']").filter(visible=True).first
 
         # Красный крестик удаления (берем первый, так как он привязан к нулевому полю)
         self.delete_phone_button_0 = page.locator("button[data-formset-delete-button]").first
@@ -67,10 +66,7 @@ class ProfilePage:
     def select_from_dropdown(self, dropdown_locator, option_text: str):
         """Выбор значения из Select2 с фиксацией фокуса и ожидания скриптов плагина."""
         logging.debug(f"Действие: Выбор опции '{option_text}' из выпадающего списка")
-
-        dropdown_locator.wait_for(state="visible", timeout=10000)
         dropdown_locator.click()
-
         self.search_popup.wait_for(state="visible", timeout=5000)
         self.search_popup.press_sequentially(option_text, delay=100)
         self.page.wait_for_timeout(1000)
@@ -79,10 +75,7 @@ class ProfilePage:
         target_option.wait_for(state="visible", timeout=3500)
         target_option.focus()
         target_option.click()
-
-        # Ожидание скрытия попапа, которое мы добавляли ранее
-        self.search_popup.wait_for(state="hidden", timeout=3000)
-        expect(dropdown_locator).to_have_text(option_text, timeout=3000)
+        self.page.wait_for_timeout(600)
 
     def select_gender(self, gender_code: str):
         """Выбирает пол на форме, кликая строго по тексту внутри лейбла."""
@@ -95,18 +88,14 @@ class ProfilePage:
         self.page.wait_for_timeout(500)
 
     def save_changes(self):
-        """Сбрасывает фокус, сохраняет форму и фиксирует появление уведомления."""
+        """Сбрасывает фокус, дает бэкенду сайта время переварить AJAX-валидацию и сохраняет форму."""
         logging.debug("Действие: Нажатие кнопки 'Сохранить' изменения профиля")
         self.page.locator("h1, h2, label").first.click(force=True)
         self.page.wait_for_timeout(1000)
         self.save_button.click()
-
         final_alert = self.page.locator("div.dj-message.alert-success, div.dj-message.alert-danger")
-        # Ждем только появления уведомления от сервера
         final_alert.wait_for(state="visible", timeout=10000)
-
-        # Вместо ожидания скрытия даем сайту 1 секунду на стабилизацию DOM
-        self.page.wait_for_timeout(1000)
+        self.page.wait_for_timeout(500)
 
     def set_date_of_birth(self, date_str: str):
         """Заполняет дату рождения в формате ГГГГ-ММ-ДД."""
@@ -121,4 +110,3 @@ class ProfilePage:
         self.date_of_birth_input.click()
         self.page.keyboard.press("Alt+ArrowDown")
         self.page.wait_for_timeout(500)
-

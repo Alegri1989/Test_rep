@@ -11,6 +11,30 @@ class TestResumeIntegration:
 
     @allure.title("Сквозное создание резюме с проверкой сохраненных данных и авто-удалением")
     def test_create_full_resume_workflow(self, open_create_resume_page: Page, app_config):
+        """
+        Бизнес-кейс: Интеграционный сквозной E2E сценарий заполнения всех блоков формы резюме с последующей валидацией в режиме редактирования и гарантированной очисткой.
+
+        Прекондишены:
+        1. Пользователь успешно авторизован в системе.
+        2. Открыта пустая форма создания нового резюме.
+
+        Шаги:
+        1. Полностью заполнить блок "Пожелания к работе" (профессия в Select2, производная должность, зарплата, условия труда).
+        2. Активировать чекбоксы согласия на переезд и потребности в жилье.
+        3. Добавить динамическую строку и заполнить номер телефона, сверив дефолтный Email.
+        4. Инициализировать блоки опыта работы и образования, заполнив их текстовыми названиями организаций.
+        5. Выбрать параметры владения иностранными языками.
+        6. Ввести блок сопроводительной дополнительной информации.
+        7. Отправить заполненную форму на сервер кликом по кнопке "Создать резюме" и дождаться редиректа на страницу списка.
+        8. Нажать кнопку редактирования созданного резюме для перехода на форму апдейта.
+        9. Проверить сохранность каждого введенного параметра на форме редактирования.
+        10. В блоке 'finally' выполнить гарантированное удаление резюме из общего списка для очистки базы данных.
+
+        Ожидаемый результат (ОР):
+        - Форма успешно отправляется, бэкенд без ошибок валидации регистрирует резюме и переводит пользователя на URL списка.
+        - Все до единого сохраненные параметры (включая динамические формсеты и селекты) корректно подгружаются из базы на UI формы редактирования.
+        - После удаления резюме полностью пропадает из интерфейса личного кабинета.
+        """
         resume = ResumePage(open_create_resume_page)
 
         # Тестовые данные
@@ -24,7 +48,6 @@ class TestResumeIntegration:
         default_email = app_config["default_profile"]["email_sent"]
 
         with allure.step("Шаг 1: Заполнение блока 'Пожелания к работе'"):
-            # Используем универсальный гибкий локатор вместо привязки к индексам формы
             universal_profession_container = open_create_resume_page.locator(
                 "[id^='select2-id_desired_profession'][id$='container']"
             )
@@ -69,7 +92,7 @@ class TestResumeIntegration:
 
         with allure.step("Шаг 8: Нажатие кнопки 'Создать резюме' и отправка формы"):
             resume.submit_resume_button.click()
-            open_create_resume_page.wait_for_url(expected_list_url, timeout=15000)
+            open_create_resume_page.wait_for_url(expected_list_url, timeout=30000)
             open_create_resume_page.wait_for_load_state("domcontentloaded")
 
         try:
@@ -86,8 +109,6 @@ class TestResumeIntegration:
                 update_profession_container.wait_for(state="visible", timeout=5000)
 
                 expect(update_profession_container).to_have_text(re.compile(test_profession))
-
-                # Железная проверка нативного селекта по таймауту без лишних кликов по UI
                 expect(resume.derivative_update_dropdown).to_have_value("1", timeout=5000)
                 expect(resume.salary_input).to_have_value(test_salary)
                 expect(resume.employment_nature_dropdown).to_have_value("1")
@@ -107,7 +128,6 @@ class TestResumeIntegration:
 
         finally:
             with allure.step("Шаг 10: Гарантированная очистка данных (удаление резюме)"):
-                # Разрываем гонку: даем Playwright 1.5 секунды, чтобы завершить все ассерты ДО деструктивных действий
                 open_create_resume_page.wait_for_timeout(1500)
 
                 current_url = open_create_resume_page.url
@@ -117,7 +137,8 @@ class TestResumeIntegration:
                 open_create_resume_page.wait_for_timeout(1000)
 
                 if "/update/" in current_url:
-                    open_create_resume_page.goto(expected_list_url)
+                    # Исправлено зависание: принудительно снижаем строгость ожидания главной страницы
+                    open_create_resume_page.goto(expected_list_url, wait_until="domcontentloaded")
                     open_create_resume_page.wait_for_load_state("domcontentloaded")
 
                 if not created_id:

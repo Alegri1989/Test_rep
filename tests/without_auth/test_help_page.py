@@ -6,15 +6,23 @@ from pages.help_page import HelpPage
 
 @pytest.mark.help_page
 @allure.title("Бизнес-кейс: Проверка скачивания руководства пользователя для соискателя")
-def test_guest_download_seeker_guide(auth_page: Page):
-    page = auth_page
+def test_guest_download_seeker_guide(guest_page: Page):
+    """
+    Кейс: Проверка доступности ссылки для скачивания руководства соискателя.
+
+    Шаги:
+    1. Перейти на гостевую страницу 'Помощь и поддержка'.
+    2. Проверить видимость кнопки 'Скачать' для соискателей.
+    3. Убедиться, что ссылка ведет на валидный файл в формате PDF.
+    """
+    page = guest_page
     help_page = HelpPage(page)
 
     with allure.step("Шаг 1: Переход на страницу помощи"):
         help_page.navigate()
 
     with allure.step("Шаг 2: Проверка видимости кнопки и корректности ссылки на PDF соискателя"):
-        expect(help_page.download_seeker_guide_btn).to_be_visible(timeout=5000)
+        help_page.download_seeker_guide_btn.wait_for(state="visible", timeout=5000)
         href = help_page.download_seeker_guide_btn.get_attribute("href")
         assert href is not None, "Ошибка: у ссылки отсутствует атрибут href"
         assert href.lower().endswith(".pdf"), f"Ошибка: ссылка ведет на неверный формат '{href}'"
@@ -22,8 +30,16 @@ def test_guest_download_seeker_guide(auth_page: Page):
 
 @pytest.mark.help_page
 @allure.title("Бизнес-кейс: Проверка скачивания ВСЕХ инструкций во вкладке нанимателя")
-def test_guest_download_employer_instructions(auth_page: Page):
-    page = auth_page
+def test_guest_download_employer_instructions(guest_page: Page):
+    """
+    Кейс: Верификация ссылок скачивания документации во вкладке Нанимателя.
+
+    Шаги:
+    1. Перейти на гостевую страницу 'Помощь и поддержка'.
+    2. Переключиться на вкладку 'Нанимателю'.
+    3. Последовательно проверить видимость кнопок и валидность расширений файлов (PDF/DOCX).
+    """
+    page = guest_page
     help_page = HelpPage(page)
 
     with allure.step("Шаг 1: Переход на страницу помощи"):
@@ -36,7 +52,7 @@ def test_guest_download_employer_instructions(auth_page: Page):
         expect(help_page.employer_tab).to_contain_class("active")
 
     with allure.step("Шаг 3: Проверка ссылки на руководство администратора нанимателя (PDF)"):
-        expect(help_page.download_employer_guide_btn).to_be_visible(timeout=5000)
+        help_page.download_employer_guide_btn.wait_for(state="visible", timeout=5000)
         href = help_page.download_employer_guide_btn.get_attribute("href")
         assert href is not None, "Ошибка: у ссылки отсутствует атрибут href"
         assert href.lower().endswith(".pdf"), f"Ошибка: ссылка ведет на неверный формат '{href}'"
