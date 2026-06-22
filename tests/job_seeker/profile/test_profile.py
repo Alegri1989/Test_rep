@@ -201,10 +201,9 @@ class TestProfilePart1:
             default_date_iso = "-".join(default_date.split(".")[::-1])
 
         with allure.step(f"Шаг 1: Очистка поля и ввод тестовой даты: {test_date}"):
-            profile.date_of_birth_input.click()
-            open_profile_page.keyboard.press("Control+A")
-            open_profile_page.keyboard.press("Backspace")
-            profile.date_of_birth_input.press_sequentially(test_date, delay=50)
+            # Используем fill() с ISO-форматом YYYY-MM-DD — работает одинаково
+            # на всех ОС и локалях браузера (в отличие от press_sequentially с DD.MM.YYYY)
+            profile.date_of_birth_input.fill(test_date_iso)
             profile.age_display.click()
             profile.save_changes()
 
@@ -213,10 +212,8 @@ class TestProfilePart1:
             expect(profile.age_display).to_have_text(expected_test_age)
 
         with allure.step(f"Шаг 2: Восстановление дефолтной даты: {default_date}"):
-            profile.date_of_birth_input.click()
-            open_profile_page.keyboard.press("Control+A")
-            open_profile_page.keyboard.press("Backspace")
-            profile.date_of_birth_input.press_sequentially(default_date, delay=50)
+            # Аналогично — fill() с ISO-форматом для кроссплатформенной стабильности
+            profile.date_of_birth_input.fill(default_date_iso)
             profile.age_display.click()
             profile.save_changes()
 
@@ -269,10 +266,8 @@ class TestProfilePart2:
             profile.save_changes()
 
         with allure.step(f"Шаг 2: Восстановление исходной даты ручным вводом: {default_date_str}"):
-            profile.date_of_birth_input.click()
-            open_profile_page.keyboard.press("Control+A")
-            open_profile_page.keyboard.press("Backspace")
-            profile.date_of_birth_input.press_sequentially(default_date_str, delay=50)
+            # fill() с ISO-форматом YYYY-MM-DD — кроссплатформенно, не зависит от локали ОС
+            profile.date_of_birth_input.fill(default_date_iso)
             profile.age_display.click()
             profile.save_changes()
 

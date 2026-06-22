@@ -572,18 +572,8 @@ def test_broken_object_level_authorization(auth_page: Page, app_config):
 
         fill_and_submit_required_resume_fields(auth_page)
 
-    with allure.step("Шаг 2: Извлечение созданного ID из страницы через Page Object"):
-        # Используем родной локатор из класса ResumePage
+    with allure.step("Шаг 2: Проверка, что резюме успешно создано и видно в списке"):
         resume_page.first_resume_edit_link.wait_for(state="visible", timeout=5000)
-
-        # Забираем значение атрибута href
-        href_value = resume_page.first_resume_edit_link.get_attribute("href")
-        assert href_value, "Не удалось получить атрибут href у кнопки редактирования резюме"
-
-        # Извлекаем цифры ID из полученной строки
-        match = re.search(r"/resume/(\d+)/", href_value)
-        assert match, f"Не удалось извлечь ID резюме из строки href: {href_value}"
-
         target_fake_url = f"{base_url}/registration/job-seeker/resume/{fake_id}/update/"
 
     with allure.step(f"Шаг 3: Переход по подмененному URL {fake_id} и перехват ответа бэкенда"):

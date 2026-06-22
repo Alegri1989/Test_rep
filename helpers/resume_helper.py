@@ -1,6 +1,7 @@
 import allure
 from playwright.sync_api import Page
 from pages.resume_page import ResumePage
+from helpers.network_helper import goto_with_retry
 
 
 def fill_and_submit_resume_form(page: Page):
@@ -70,8 +71,8 @@ def clear_all_resumes_from_account(page: Page):
     resume_list_url = "https://gsz.gov.by/registration/job-seeker/resume/list/"
 
     if page.url != resume_list_url:
-        page.goto(resume_list_url)
-        page.wait_for_load_state("networkidle")
+        goto_with_retry(page, resume_list_url, wait_until="load")
+        page.wait_for_load_state("load")
 
     # Сначала снимаем все опубликованные резюме с публикации с паузой
     while resume.all_unpublish_links.count() > 0:
