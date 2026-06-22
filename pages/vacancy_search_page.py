@@ -1,3 +1,4 @@
+import re
 from playwright.sync_api import Page
 from helpers.network_helper import goto_with_retry
 
@@ -22,7 +23,8 @@ class VacancySearchPage:
 
         # Блоки фильтров Select2
         self.work_time_mode_dropdown = page.locator(
-            "xpath=//h4[contains(text(), 'Режим рабочего времени')]/following::span[contains(@class, 'select2-selection')]"
+            "xpath=//h4[contains(text(), 'Режим рабочего времени')]/following::"
+            "span[contains(@class, 'select2-selection')]"
         ).first
 
         self.employer_dropdown = page.locator(
@@ -38,7 +40,8 @@ class VacancySearchPage:
         ).first
 
         self.citizens_category_dropdown = page.locator(
-            "xpath=//h4[contains(text(), 'С возможностью трудоустройства')]/following::span[contains(@class, 'select2-selection')]"
+            "xpath=//h4[contains(text(), 'С возможностью трудоустройства')]/following::"
+            "span[contains(@class, 'select2-selection')]"
         ).first
 
         self.soft_skills_dropdown = page.locator(
@@ -46,7 +49,8 @@ class VacancySearchPage:
         ).first
 
         self.activity_sphere_dropdown = page.locator(
-            "xpath=//h4[contains(text(), 'Сфера деятельности')]/following::span[contains(@class, 'select2-selection')]"
+            "xpath=//h4[contains(text(), 'Сфера деятельности')]/following::"
+            "span[contains(@class, 'select2-selection')]"
         ).first
 
         # 11. Фильтр Дополнительные параметры (Локаторы текстовых лейблов)
@@ -63,11 +67,10 @@ class VacancySearchPage:
         # Селекторы карточек результатов поиска
         self.vacancy_title_link = page.locator("a.debounced-link")
 
-        # Кнопка "Контакты" на карточке вакансии (ведет на якорь contact-info-anchor детальной страницы)
+        # Кнопка "Контакты" на карточке вакансии
         self.vacancy_contacts_button = page.locator("a[href*='detail-public/#contact-info-anchor']")
 
-        # Заблокированная для гостя кнопка "Откликнуться" (используется и в списке, и на детальной странице -
-        # одна и та же разметка, отличие только в том, на какой странице сейчас находится page)
+        # Заблокированная для гостя кнопка "Откликнуться"
         self.apply_button_in_list = page.locator(
             "a[title='Только соискатель может откликнуться на вакансию']"
         )
@@ -81,6 +84,16 @@ class VacancySearchPage:
         self.wage_rate_spoiler_title = page.locator("h4.col-11:has-text('Ставка')")
         self.wage_rate_from_input = page.locator("#id_wage_rate_from")
         self.wage_rate_to_input = page.locator("#id_wage_rate_to")
+
+        # Элементы пагинации
+        self.active_page_number = page.locator("span.page-link").first
+        self.page_2_link = page.locator("a.page-link[href*='page=2']").first
+        self.back_arrow_btn = page.locator("a.page-link").filter(has=page.locator("span.fa-caret-left")).first
+        self.forward_arrow_btn = page.locator("a.page-link").filter(has=page.locator("span.fa-caret-right")).first
+        self.fast_backward_btn = page.locator("a.page-link").filter(has=page.locator("span.fa-backward")).first
+        self.fast_forward_btn = page.locator("a.page-link").filter(has=page.locator("span.fa-forward")).first
+        self.paginate_by_select = page.locator("#paginate_by_select")
+        self.sort_by_select = page.locator("#sort_by")
 
     def navigate(self):
         """Чистый переход на страницу поиска вакансий с устойчивостью к медленной сети."""

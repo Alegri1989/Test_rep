@@ -29,6 +29,14 @@
       "Общее среднее",
       "Среднее специальное"
     ],
+    "sorting_options": [
+      "sort_published_at_desc",
+      "sort_published_at_asc",
+      "salary_asc",
+      "salary_desc",
+      "profession_asc",
+      "profession_desc"
+    ],
     "edit_address": {
       "region": "Минская",
       "district": "Борисовский",
@@ -49,5 +57,15 @@
     "employer_name": "Государственное предприятие \"ЦИТ Минтруда и соцзащиты\"",
     "employer_unp": "191009727",
     "employer_assert_keyword": "ЦИТ Минтруда"
+  },
+  "vacancy_combined_test_data": {
+    "min_salary": "1000",
+    "wage_rate_from": "0.25",
+    "wage_rate_to": "0.5",
+    "education_level": "Высшее",
+    "soft_skill": "Тайм-менеджмент"
+  },
+  "resume_security_test_data": {
+    "fake_resume_id": "99207"
   }
 }

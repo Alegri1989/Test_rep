@@ -150,3 +150,6 @@ def pytest_generate_tests(metafunc):
 
     if "test_education" in metafunc.fixturenames:
         metafunc.parametrize("test_education", CONFIG["profile_test_data"]["educations"])
+
+    if "test_sorting" in metafunc.fixturenames:
+        metafunc.parametrize("test_sorting", CONFIG["profile_test_data"]["sorting_options"])

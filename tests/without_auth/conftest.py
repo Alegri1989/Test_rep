@@ -13,29 +13,24 @@ def run_global_auth():
 @pytest.fixture(scope="function")
 def guest_page(pytestconfig) -> Page:
     """Создает гостевую страницу с десктопным разрешением для стабильности headless режима."""
-    # 🛡️ Безопасное чтение флага headed для совместимости дома и в GitHub Actions
     try:
         is_headless = not pytestconfig.getoption("headed")
     except ValueError:
-        is_headless = True  # Если флага нет в конфигурации, запускаем в headless-режиме
+        is_headless = True
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"], channel="chrome")
 
-        # Насильно задаем десктопный размер экрана 1920x1080, чтобы верстка ГСЗ не сжималась
         context = browser.new_context(
             locale="ru-RU",
             viewport={"width": 1920, "height": 1080}
         )
         page = context.new_page()
-        # 🐢 Увеличенный дефолтный таймаут навигации/действий — запас для медленной сети
         page.set_default_navigation_timeout(45000)
         page.set_default_timeout(15000)
 
-        # Шаг 1: Заходим на главную страницу портала (с retry на случай подтормаживания сайта)
         goto_with_retry(page, "https://gsz.gov.by", wait_until="load")
 
-        # Шаг 2: Принимаем куки один раз на главной
         try:
             cookie_btn = page.locator("text=ПРИНЯТЬ").first
             cookie_btn.wait_for(state="visible", timeout=3000)
@@ -55,3 +50,9 @@ def guest_page(pytestconfig) -> Page:
 def vacancy_page(guest_page: Page) -> VacancySearchPage:
     """Фикстура автоматической инициализации страницы поиска вакансий."""
     return VacancySearchPage(guest_page)
+
+
+@pytest.fixture(scope="function")
+def test_sorting():
+    """Локальная фикстура-заглушка для связывания аргумента теста с хуком генерации тестов."""
+    pass

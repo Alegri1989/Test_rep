@@ -134,6 +134,9 @@ class ResumePage:
         self.all_unpublish_links = page.locator("a:has-text('Снять с публикации')")
         self.all_delete_buttons = page.get_by_role("button", name="Удалить")
         self.edu_qualification_input = page.locator("#id_resume_education-0-qualification")
+        self.first_resume_edit_link = page.locator(
+            "a[href*='/registration/job-seeker/resume/'][href$='/update/']"
+        ).first
 
     def get_skill_option_by_text(self, text: str):
         """Возвращает локатор строки в результатах поиска по тексту навыка."""
@@ -203,6 +206,8 @@ class ResumePage:
 
         self.submit_resume_button.click()
         self.page.wait_for_timeout(3000)
+
+
 
 
 

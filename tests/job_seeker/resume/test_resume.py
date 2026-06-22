@@ -4,6 +4,9 @@ import pytest
 from playwright.sync_api import Page, expect
 from pages.resume_page import ResumePage
 from helpers.helpers import calculate_expected_age
+from helpers.network_helper import goto_with_retry
+from helpers.resume_helper import fill_and_submit_required_resume_fields, clear_all_resumes_from_account
+
 
 
 @allure.epic("Резюме соискателя")
@@ -538,5 +541,64 @@ class TestResumeJobRequirements:
 
                 with allure.step("ОР: Текст успешно отображается в поле ввода"):
                     expect(resume.additional_info_textarea).to_have_value(test_text)
+
+
+@pytest.mark.resume
+@allure.title("Безопасность: Запрет доступа к редактированию чужого резюме при подмене ID")
+def test_broken_object_level_authorization(auth_page: Page, app_config):
+    """Тест создает резюме, извлекает его валидный ID, подменяет в нем цифры и проверяет защиту IDOR (BOLA).
+
+    Шаги:
+    1. Очистить профиль от старых резюме для стабильности.
+    2. Перейти на страницу списка и нажать кнопку создания резюме.
+    3. Заполнить обязательные поля через хелпер и сохранить черновик.
+    4. Извлечь динамический ID из локатора resume_page.first_resume_edit_link.
+    5. Выполнить переход по скомпрометированному URL-адресу из конфигурации.
+    6. Верифицировать HTTP статус-код 403 Forbidden в сети и текст ошибки на UI.
+    7. Удалить созданное тестовое резюме.
+    """
+    fake_id = app_config["resume_security_test_data"]["fake_resume_id"]
+    base_url = app_config["base_url"]
+    resume_page = ResumePage(auth_page)
+
+    with allure.step("Шаг 1: Подготовка окружения и создание резюме"):
+        clear_all_resumes_from_account(auth_page)
+
+        list_url = f"{base_url}/registration/job-seeker/resume/list/"
+        goto_with_retry(auth_page, list_url, wait_until="load")
+
+        resume_page.create_resume_button.click()
+        auth_page.wait_for_load_state("load")
+
+        fill_and_submit_required_resume_fields(auth_page)
+
+    with allure.step("Шаг 2: Извлечение созданного ID из страницы через Page Object"):
+        # Используем родной локатор из класса ResumePage
+        resume_page.first_resume_edit_link.wait_for(state="visible", timeout=5000)
+
+        # Забираем значение атрибута href
+        href_value = resume_page.first_resume_edit_link.get_attribute("href")
+        assert href_value, "Не удалось получить атрибут href у кнопки редактирования резюме"
+
+        # Извлекаем цифры ID из полученной строки
+        match = re.search(r"/resume/(\d+)/", href_value)
+        assert match, f"Не удалось извлечь ID резюме из строки href: {href_value}"
+
+        target_fake_url = f"{base_url}/registration/job-seeker/resume/{fake_id}/update/"
+
+    with allure.step(f"Шаг 3: Переход по подмененному URL {fake_id} и перехват ответа бэкенда"):
+        with auth_page.expect_response(re.compile(rf"/resume/{fake_id}/")) as response_info:
+            goto_with_retry(auth_page, target_fake_url, wait_until="load")
+
+        response = response_info.value
+
+    with allure.step("Шаг 4: Проверка блокировки доступа (Статус 403 и текст на UI)"):
+        assert response.status == 403, f"Ожидался статус 403, но бэкенд вернул {response.status}"
+
+        error_message_locator = auth_page.get_by_text("Доступ к данной странице запрещен", exact=False)
+        expect(error_message_locator).to_be_visible(timeout=5000)
+
+    with allure.step("Шаг 5: Посткондишн (Очистка)"):
+        clear_all_resumes_from_account(auth_page)
 
 
