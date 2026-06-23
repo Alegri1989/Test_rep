@@ -4,6 +4,7 @@ from pages.vacancy_search_page import VacancySearchPage
 from pages.public_work_page import PublicWorkPage
 from pages.gpd_page import GpdPage
 from pages.future_work_page import FutureWorkPage
+from pages.education_page import EducationPage
 from helpers.network_helper import goto_with_retry
 
 
@@ -71,6 +72,12 @@ def gpd_page(guest_page: Page) -> GpdPage:
 def future_work_page(guest_page: Page) -> FutureWorkPage:
     """Фикстура автоматической инициализации страницы перспективных рабочих мест."""
     return FutureWorkPage(guest_page)
+
+
+@pytest.fixture(scope="function")
+def education_page(guest_page: Page) -> EducationPage:
+    """Фикстура автоматической инициализации страницы обучения."""
+    return EducationPage(guest_page)
 
 
 @pytest.fixture(scope="function")
