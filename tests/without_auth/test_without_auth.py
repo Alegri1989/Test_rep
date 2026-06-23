@@ -179,7 +179,8 @@ def test_guest_open_vacancy_contacts(guest_page: Page):
         expected_title = target_card.locator("a.debounced-link").text_content().strip()
 
         target_button.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.locator("h1").first.wait_for(state="visible", timeout=10000)
 
     with allure.step("ОР 1: Верификация перехода на блок контактов именно выбранной вакансии"):
         expect(page).to_have_url(
