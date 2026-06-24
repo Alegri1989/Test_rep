@@ -10,5 +10,5 @@ def apply_vacancy_filter_and_wait(page: Page, vacancy_page: VacancySearchPage):
     # Кликаем по кнопке Поиск
     vacancy_page.submit_filter_btn.click(force=True)
 
-    page.wait_for_load_state("networkidle")
+    page.wait_for_load_state("load")
     page.wait_for_timeout(1500)

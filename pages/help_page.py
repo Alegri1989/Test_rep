@@ -20,7 +20,9 @@ class HelpPage:
         self.download_seeker_guide_btn = page.locator("a[href*='rukovodstvo_job_seeker.pdf']")
         self.download_employer_guide_btn = page.locator("a[href*='5xUt70I.pdf']")
         self.download_vacancy_order_btn = page.locator("a[href*='V4LdVFg.pdf']")
-        self.download_login_instruction_btn = page.locator("a[href*='2025_1.pdf']")
+        self.download_login_instruction_btn = page.locator(
+            "tr", has_text="Инструкция по входу нанимателя"
+        ).locator("a")
         self.download_chrome_instruction_btn = page.locator("a[href*='Chrome.pdf']")
         self.download_gossuok_instruction_btn = page.locator("a[href*='GosSUOK.pdf']")
         self.download_legal_entity_template_btn = page.locator("a[href*='ec0ozce.docx']")
