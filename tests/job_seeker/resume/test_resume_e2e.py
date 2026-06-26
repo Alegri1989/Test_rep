@@ -84,8 +84,8 @@ class TestResumeIntegration:
             resume.edu_name_input.fill(test_edu)
 
         with allure.step("Шаг 6: Заполнение блока 'Владение языками'"):
-            resume.language_dropdown.select_option("4")
-            resume.lang_level_dropdown.select_option("10")
+            resume.select_language_s2("Английский")
+            resume.select_lang_level_s2("Продвинутый")
 
         with allure.step("Шаг 7: Заполнение блока 'Дополнительная информация'"):
             resume.additional_info_textarea.fill(test_info)

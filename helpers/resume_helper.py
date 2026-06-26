@@ -33,8 +33,8 @@ def fill_and_submit_resume_form(page: Page):
         resume.edu_ending_input.fill("2020")
         resume.edu_info_textarea.fill("тестобр")
 
-        resume.language_dropdown.select_option(label="Английский")
-        resume.lang_level_dropdown.select_option(label="средний")
+        resume.select_language_s2("Английский")
+        resume.select_lang_level_s2("средний")
 
         resume.skills_container.click()
         resume.skills_search_input.press_sequentially("Тайм-менеджмент", delay=100)
@@ -59,8 +59,8 @@ def fill_and_submit_required_resume_fields(page: Page):
 
         resume.salary_input.fill("2000")
 
-        resume.language_dropdown.select_option(label="Английский")
-        resume.lang_level_dropdown.select_option(label="средний")
+        resume.select_language_s2("Английский")
+        resume.select_lang_level_s2("средний")
 
         resume.submit_resume_button.click()
         page.wait_for_timeout(3000)

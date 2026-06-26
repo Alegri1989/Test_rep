@@ -517,7 +517,7 @@ def test_guest_navigate_to_employer_via_organization_link(guest_page: Page, futu
 
     with allure.step("ОР 1: Верификация перехода на страницу нанимателя"):
         expect(guest_page).to_have_url(re.compile(r"/directory/business-entity/\d+/detail/public/"))
-        expect(guest_page.locator(f"text={employer_name}").first).to_be_visible(timeout=5000)
+        expect(guest_page.get_by_text(employer_name).first).to_be_visible(timeout=5000)
 
 
 @pytest.mark.future_work

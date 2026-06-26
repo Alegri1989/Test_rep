@@ -133,7 +133,7 @@ def test_guest_open_vacancy_detail_via_title(guest_page: Page):
     with allure.step("Шаг 2: Фиксация текста первой вакансии и переход по ссылке"):
         expected_title = vacancy_page.vacancy_title_link.first.text_content().strip()
         vacancy_page.vacancy_title_link.first.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
 
     with allure.step("ОР 1: Верификация URL карточки и заголовка вакансии"):
         expect(page).to_have_url(re.compile(r".*/registration/employer/vacancy/\d+/detail-public/"))

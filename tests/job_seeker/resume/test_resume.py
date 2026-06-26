@@ -427,10 +427,10 @@ class TestResumeJobRequirements:
                     expect(resume.lang_level_dropdown).to_have_value("")
 
                 with allure.step("Шаг 2: Изменение языка на 'Английский' (value='4')"):
-                    resume.language_dropdown.select_option("4")
+                    resume.select_language_s2("Английский")
 
                 with allure.step("Шаг 3: Изменение уровня на 'Продвинутый' (value='10')"):
-                    resume.lang_level_dropdown.select_option("10")
+                    resume.select_lang_level_s2("Продвинутый")
 
                 with allure.step("ОР 1: Новые языковые параметры успешно применились"):
                     expect(resume.language_dropdown).to_have_value("4")
@@ -440,17 +440,17 @@ class TestResumeJobRequirements:
                     resume.add_language_button.click()
 
                 with allure.step("ОР 2: Появилась вторая пустая строка для ввода языка"):
+                    expect(resume.delete_language_button_1).to_be_visible(timeout=3000)
                     second_lang = open_create_resume_page.locator(
                         "#id_resume_languages-1-language"
                     )
-                    expect(second_lang).to_be_visible(timeout=3000)
                     expect(second_lang).to_have_value("")
 
                 with allure.step("Шаг 5: Удаление второй строки через крестик"):
                     resume.delete_language_button_1.click()
 
                 with allure.step("ОР 3: Вторая строка языков успешно исчезла"):
-                    expect(second_lang).not_to_be_visible()
+                    expect(resume.delete_language_button_1).not_to_be_visible()
 
         @allure.epic("Личный кабинет соискателя")
         @allure.feature("Создание резюме")
