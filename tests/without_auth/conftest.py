@@ -10,6 +10,7 @@ from pages.opfr_page import OpfrPage
 from pages.public_resume_search_page import PublicResumeSearchPage
 from pages.departments_page import DepartmentsPage
 from pages.activity_page import ActivityPage
+from pages.news_page import NewsPage
 from helpers.network_helper import goto_with_retry
 
 
@@ -113,6 +114,12 @@ def departments_page(guest_page: Page) -> DepartmentsPage:
 def activity_page(guest_page: Page) -> ActivityPage:
     """Фикстура автоматической инициализации страницы публичного списка мероприятий."""
     return ActivityPage(guest_page)
+
+
+@pytest.fixture(scope="function")
+def news_page(guest_page: Page) -> NewsPage:
+    """Фикстура автоматической инициализации страницы публичного списка новостей."""
+    return NewsPage(guest_page)
 
 
 @pytest.fixture(scope="function")
