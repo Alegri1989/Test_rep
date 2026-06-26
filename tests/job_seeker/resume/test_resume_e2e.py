@@ -85,7 +85,7 @@ class TestResumeIntegration:
 
         with allure.step("Шаг 6: Заполнение блока 'Владение языками'"):
             resume.select_language("Английский")
-            resume.select_language_level("Продвинутый")
+            resume.select_language_level("продвинутый")
 
         with allure.step("Шаг 7: Заполнение блока 'Дополнительная информация'"):
             resume.additional_info_textarea.fill(test_info)
@@ -122,8 +122,8 @@ class TestResumeIntegration:
 
                 expect(resume.exp_org_input).to_have_value(test_org)
                 expect(resume.edu_name_input).to_have_value(test_edu)
-                expect(resume.language_dropdown).to_have_value("4")
-                expect(resume.lang_level_dropdown).to_have_value("10")
+                expect(resume.language_dropdown_1).to_have_value("4")
+                expect(resume.lang_level_dropdown_1).to_have_value("10")
                 expect(resume.additional_info_textarea).to_have_value(test_info)
 
         finally:

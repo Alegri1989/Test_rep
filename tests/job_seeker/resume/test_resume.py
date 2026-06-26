@@ -429,12 +429,12 @@ class TestResumeJobRequirements:
                 with allure.step("Шаг 2: Изменение языка на 'Английский'"):
                     resume.select_language("Английский")
 
-                with allure.step("Шаг 3: Изменение уровня на 'Продвинутый'"):
-                    resume.select_language_level("Продвинутый")
+                with allure.step("Шаг 3: Изменение уровня на 'продвинутый'"):
+                    resume.select_language_level("продвинутый")
 
                 with allure.step("ОР 1: Новые языковые параметры успешно применились"):
-                    expect(resume.language_dropdown).to_have_value("4")
-                    expect(resume.lang_level_dropdown).to_have_value("10")
+                    expect(resume.language_dropdown_1).to_have_value("4")
+                    expect(resume.lang_level_dropdown_1).to_have_value("10")
 
                 with allure.step("Шаг 4: Клик по кнопке 'Добавить язык'"):
                     resume.add_language_button.click()
@@ -442,7 +442,7 @@ class TestResumeJobRequirements:
                 with allure.step("ОР 2: Появилась вторая пустая строка для ввода языка"):
                     expect(resume.delete_language_button_1).to_be_visible(timeout=3000)
                     second_lang = open_create_resume_page.locator(
-                        "#id_resume_languages-1-language"
+                        "#id_resume_languages-2-language"
                     )
                     expect(second_lang).to_have_value("")
 

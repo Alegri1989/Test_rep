@@ -5,6 +5,8 @@ from pages.public_work_page import PublicWorkPage
 from pages.gpd_page import GpdPage
 from pages.future_work_page import FutureWorkPage
 from pages.education_page import EducationPage
+from pages.foreign_page import ForeignPage
+from pages.opfr_page import OpfrPage
 from helpers.network_helper import goto_with_retry
 
 
@@ -78,6 +80,18 @@ def future_work_page(guest_page: Page) -> FutureWorkPage:
 def education_page(guest_page: Page) -> EducationPage:
     """Фикстура автоматической инициализации страницы обучения."""
     return EducationPage(guest_page)
+
+
+@pytest.fixture(scope="function")
+def foreign_page(guest_page: Page) -> ForeignPage:
+    """Фикстура автоматической инициализации страницы занятости иностранных граждан."""
+    return ForeignPage(guest_page)
+
+
+@pytest.fixture(scope="function")
+def opfr_page(guest_page: Page) -> OpfrPage:
+    """Фикстура автоматической инициализации страницы ОПФР-организаций."""
+    return OpfrPage(guest_page)
 
 
 @pytest.fixture(scope="function")

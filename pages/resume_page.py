@@ -94,17 +94,16 @@ class ResumePage:
         )
 
         # Раздел "Владение языками"
+        # index 0 — скрытый шаблон formset на форме создания; на форме редактирования — первый сохранённый язык
         self.language_dropdown = page.locator("#id_resume_languages-0-language")
         self.lang_level_dropdown = page.locator("#id_resume_languages-0-language_level")
-        self.language_select2_container = page.locator(
-            "#select2-id_resume_languages-0-language-container"
-        )
-        self.language_level_select2_container = page.locator(
-            "#select2-id_resume_languages-0-language_level-container"
-        )
+        # index 1 — первая видимая строка на форме создания (появляется после клика "Добавить язык")
+        self.language_dropdown_1 = page.locator("#id_resume_languages-1-language")
+        self.lang_level_dropdown_1 = page.locator("#id_resume_languages-1-language_level")
         self.add_language_button = page.get_by_role("button", name="Добавить язык")
+        # delete button для index 2 — второй видимой строки (после повторного клика "Добавить язык")
         self.delete_language_button_1 = page.locator(
-            "#id_resume_languages-1-language_level ~ button[data-formset-delete-button]"
+            "#id_resume_languages-2-language_level ~ button[data-formset-delete-button]"
         )
 
         # Раздел "Гибкие навыки"
@@ -145,26 +144,16 @@ class ResumePage:
         ).first
 
     def select_language(self, text: str):
-        """Выбирает язык через Select2-контейнер (ждёт инициализации виджета)."""
-        self.language_select2_container.wait_for(state="visible", timeout=10000)
-        self.language_select2_container.click()
-        option = self.page.locator(
-            "#select2-id_resume_languages-0-language-results li.select2-results__option",
-            has_text=text
-        ).first
-        option.wait_for(state="visible", timeout=5000)
-        option.click()
+        """Добавляет строку языка через 'Добавить язык' и выбирает значение через нативный select (index 1)."""
+        self.add_language_button.scroll_into_view_if_needed()
+        self.add_language_button.click()
+        self.language_dropdown_1.wait_for(state="visible", timeout=5000)
+        self.language_dropdown_1.select_option(label=text)
 
     def select_language_level(self, text: str):
-        """Выбирает уровень владения языком через Select2-контейнер."""
-        self.language_level_select2_container.wait_for(state="visible", timeout=10000)
-        self.language_level_select2_container.click()
-        option = self.page.locator(
-            "#select2-id_resume_languages-0-language_level-results li.select2-results__option",
-            has_text=text
-        ).first
-        option.wait_for(state="visible", timeout=5000)
-        option.click()
+        """Выбирает уровень владения языком через нативный select в первой видимой строке (index 1)."""
+        self.lang_level_dropdown_1.wait_for(state="visible", timeout=3000)
+        self.lang_level_dropdown_1.select_option(label=text)
 
     def get_skill_option_by_text(self, text: str):
         """Возвращает локатор строки в результатах поиска по тексту навыка."""
