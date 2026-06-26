@@ -11,6 +11,7 @@ from pages.public_resume_search_page import PublicResumeSearchPage
 from pages.departments_page import DepartmentsPage
 from pages.activity_page import ActivityPage
 from pages.news_page import NewsPage
+from pages.services_page import ServicesPage
 from helpers.network_helper import goto_with_retry
 
 
@@ -120,6 +121,12 @@ def activity_page(guest_page: Page) -> ActivityPage:
 def news_page(guest_page: Page) -> NewsPage:
     """Фикстура автоматической инициализации страницы публичного списка новостей."""
     return NewsPage(guest_page)
+
+
+@pytest.fixture(scope="function")
+def services_page(guest_page: Page) -> ServicesPage:
+    """Фикстура автоматической инициализации страницы публичного списка услуг."""
+    return ServicesPage(guest_page)
 
 
 @pytest.fixture(scope="function")
