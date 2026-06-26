@@ -159,23 +159,37 @@ def test_activity_card_opens_public_view(guest_page: Page, activity_page: Activi
 @pytest.mark.activity
 @allure.epic("Мероприятия")
 @allure.feature("Фильтр по дате")
-@allure.title("Проверка: Поле даты публикации защищено атрибутом readonly")
-def test_date_input_is_readonly(activity_page: ActivityPage):
+@allure.title("Бизнес-кейс: Фильтрация мероприятий по дате публикации (YYYY-MM)")
+def test_filter_by_publication_date(guest_page: Page, activity_page: ActivityPage):
     """
-    Проверка: Поле "Дата публикации" использует датпикер и должно иметь
-    атрибут readonly, чтобы пользователь не мог ввести дату вручную
-    в произвольном формате.
+    Бизнес-кейс: Фильтр по дате публикации принимает формат YYYY-MM и передаёт
+    его в URL. Дата берётся динамически из первой карточки, чтобы гарантировать
+    наличие результатов.
 
     Шаги:
-    1. Открыть страницу.
-    2. Проверить атрибуты поля даты.
+    1. Открыть страницу, считать дату первой карточки (DD.MM.YYYY).
+    2. Преобразовать в YYYY-MM и установить через JS (поле readonly, датпикер не нужен).
+    3. Нажать "Поиск".
 
     ОР:
-    - Поле #id_publication_date видно и имеет атрибут readonly.
+    - URL содержит publication_date=YYYY-MM.
+    - Карточки мероприятий видны.
     """
-    with allure.step("Шаг 1: Переход на страницу"):
+    with allure.step("Шаг 1: Переход на страницу, считываем дату первой карточки"):
         activity_page.navigate()
+        date_text = guest_page.locator(".news__date").first.inner_text().strip()
+        # DD.MM.YYYY → YYYY-MM
+        parts = date_text.split(".")
+        year_month = f"{parts[2]}-{parts[1]}"
 
-    with allure.step("ОР: Поле даты присутствует и имеет readonly"):
-        expect(activity_page.date_input).to_be_visible()
-        expect(activity_page.date_input).to_have_attribute("readonly", "")
+    with allure.step(f"Шаг 2: Установка фильтра даты '{year_month}'"):
+        activity_page.set_publication_date(year_month)
+
+    with allure.step("Шаг 3: Применение фильтра"):
+        activity_page.apply_filter_and_wait()
+
+    with allure.step(f"ОР: URL содержит publication_date={year_month}, карточки видны"):
+        expect(guest_page).to_have_url(
+            re.compile(rf"publication_date={re.escape(year_month)}")
+        )
+        expect(activity_page.activity_links.first).to_be_visible()
