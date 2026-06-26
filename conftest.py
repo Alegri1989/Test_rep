@@ -1,20 +1,25 @@
 import os
+import sys
 import json
 import logging.config
-from os import path
+from pathlib import Path
 import pytest
 import allure
 from playwright.sync_api import sync_playwright
+
+_ROOT = Path(__file__).parent
+sys.path.insert(0, str(_ROOT))
+
 from pages.login_page import LoginPage
 from helpers.network_helper import goto_with_retry
 
 # Настройка конфигурации логов на старте
-lof_file_path = path.join(path.dirname(path.abspath(__file__)), 'logging.ini')
+lof_file_path = _ROOT / 'logging.ini'
 logging.config.fileConfig(lof_file_path)
 
-AUTH_STATE_PATH = "auth_state.json"
+AUTH_STATE_PATH = str(_ROOT / "auth_state.json")
 
-with open("config.json", "r", encoding="utf-8") as f:
+with open(_ROOT / "config.json", "r", encoding="utf-8") as f:
     CONFIG = json.load(f)
 
 

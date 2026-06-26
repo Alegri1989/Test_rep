@@ -96,11 +96,10 @@ class ResumePage:
         # Раздел "Владение языками"
         self.language_dropdown = page.locator("#id_resume_languages-0-language")
         self.lang_level_dropdown = page.locator("#id_resume_languages-0-language_level")
-        # Select2-контейнеры языкового блока (нативные <select> скрыты Select2)
-        self.language_s2_container = page.locator(
+        self.language_select2_container = page.locator(
             "#select2-id_resume_languages-0-language-container"
         )
-        self.lang_level_s2_container = page.locator(
+        self.language_level_select2_container = page.locator(
             "#select2-id_resume_languages-0-language_level-container"
         )
         self.add_language_button = page.get_by_role("button", name="Добавить язык")
@@ -145,18 +144,27 @@ class ResumePage:
             "a[href*='/registration/job-seeker/resume/'][href$='/update/']"
         ).first
 
-    def _select_via_s2(self, container_locator, option_text: str):
-        """Открывает Select2-виджет и кликает опцию по тексту."""
-        container_locator.click()
-        self.page.locator(".select2-results__option").filter(
-            has_text=option_text
-        ).first.click()
+    def select_language(self, text: str):
+        """Выбирает язык через Select2-контейнер (ждёт инициализации виджета)."""
+        self.language_select2_container.wait_for(state="visible", timeout=10000)
+        self.language_select2_container.click()
+        option = self.page.locator(
+            "#select2-id_resume_languages-0-language-results li.select2-results__option",
+            has_text=text
+        ).first
+        option.wait_for(state="visible", timeout=5000)
+        option.click()
 
-    def select_language_s2(self, label: str):
-        self._select_via_s2(self.language_s2_container, label)
-
-    def select_lang_level_s2(self, label: str):
-        self._select_via_s2(self.lang_level_s2_container, label)
+    def select_language_level(self, text: str):
+        """Выбирает уровень владения языком через Select2-контейнер."""
+        self.language_level_select2_container.wait_for(state="visible", timeout=10000)
+        self.language_level_select2_container.click()
+        option = self.page.locator(
+            "#select2-id_resume_languages-0-language_level-results li.select2-results__option",
+            has_text=text
+        ).first
+        option.wait_for(state="visible", timeout=5000)
+        option.click()
 
     def get_skill_option_by_text(self, text: str):
         """Возвращает локатор строки в результатах поиска по тексту навыка."""
@@ -216,8 +224,8 @@ class ResumePage:
         self.edu_specialty_input.fill("Тест-Специализация")
         self.edu_ending_input.fill("2020")
 
-        self.select_language_s2("Английский")
-        self.select_lang_level_s2("средний")
+        self.select_language("Английский")
+        self.select_language_level("средний")
 
         self.skills_container.click()
         self.skills_search_input.press_sequentially("Тайм-менеджмент", delay=100)
