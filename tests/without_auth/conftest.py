@@ -7,6 +7,7 @@ from pages.future_work_page import FutureWorkPage
 from pages.education_page import EducationPage
 from pages.foreign_page import ForeignPage
 from pages.opfr_page import OpfrPage
+from pages.public_resume_search_page import PublicResumeSearchPage
 from helpers.network_helper import goto_with_retry
 
 
@@ -92,6 +93,12 @@ def foreign_page(guest_page: Page) -> ForeignPage:
 def opfr_page(guest_page: Page) -> OpfrPage:
     """Фикстура автоматической инициализации страницы ОПФР-организаций."""
     return OpfrPage(guest_page)
+
+
+@pytest.fixture(scope="function")
+def public_resume_search_page(guest_page: Page) -> PublicResumeSearchPage:
+    """Фикстура автоматической инициализации страницы публичного поиска резюме."""
+    return PublicResumeSearchPage(guest_page)
 
 
 @pytest.fixture(scope="function")
