@@ -11,8 +11,11 @@ class ForeignPage:
         self.vacancies_banner = page.locator("a[href*='for_foreigner=on']").first
 
         # Переключатели разворачивающихся аккордеон-блоков (Bootstrap collapse)
+        # :not(.navbar-toggler) — исключает скрытую кнопку-бургер навигации,
+        # которая тоже имеет data-toggle='collapse' и всегда hidden на десктопе
         self.accordion_toggles = page.locator(
-            "[data-toggle='collapse'], [data-bs-toggle='collapse']"
+            "[data-toggle='collapse']:not(.navbar-toggler), "
+            "[data-bs-toggle='collapse']:not(.navbar-toggler)"
         )
 
         # Кнопки "Перейти" внутри раскрытых блоков (ведут на /public-view/)
