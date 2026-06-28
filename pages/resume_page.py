@@ -213,8 +213,8 @@ class ResumePage:
         self.edu_specialty_input.fill("Тест-Специализация")
         self.edu_ending_input.fill("2020")
 
-        self.select_language("Английский")
-        self.select_language_level("средний")
+        self.language_dropdown.select_option(label="Английский", force=True)
+        self.lang_level_dropdown.select_option(label="средний", force=True)
 
         self.skills_container.click()
         self.skills_search_input.press_sequentially("Тайм-менеджмент", delay=100)

@@ -426,11 +426,11 @@ class TestResumeJobRequirements:
                     expect(resume.language_dropdown).to_have_value("")
                     expect(resume.lang_level_dropdown).to_have_value("")
 
-                with allure.step("Шаг 2: Изменение языка на 'Английский'"):
-                    resume.select_language("Английский")
+                with allure.step("Шаг 2: Изменение языка на 'Английский' (value='4')"):
+                    resume.language_dropdown.select_option(value="4", force=True)
 
-                with allure.step("Шаг 3: Изменение уровня на 'продвинутый'"):
-                    resume.select_language_level("продвинутый")
+                with allure.step("Шаг 3: Изменение уровня на 'Продвинутый' (value='10')"):
+                    resume.lang_level_dropdown.select_option(value="10", force=True)
 
                 with allure.step("ОР 1: Новые языковые параметры успешно применились"):
                     expect(resume.language_dropdown_1).to_have_value("4")

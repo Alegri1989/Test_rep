@@ -67,5 +67,25 @@
   },
   "resume_security_test_data": {
     "fake_resume_id": "99207"
+  },
+  "employer": {
+    "email": "grisha.alexeyev89@gmail.com",
+    "password": "Agm5776609",
+    "permanent_workplace_id": 72769,
+    "permanent_workplace_name": "Филиал тест",
+    "test_workplace": {
+      "unpf": "000000000",
+      "name": "Автотест Филиал",
+      "region": "Минская",
+      "district": "Борисовский",
+      "village": "Борисов",
+      "address": "Борисов"
+    },
+    "test_contact_person": {
+      "fio": "Тестов Тест Тестович",
+      "position": "Менеджер",
+      "phone": "+375-29-111-11-11",
+      "email": "test_contact@test.by"
+    }
   }
 }
