@@ -77,7 +77,7 @@ def clear_all_resumes_from_account(page: Page):
     # Сначала снимаем все опубликованные резюме с публикации с паузой
     while resume.all_unpublish_links.count() > 0:
         resume.all_unpublish_links.first.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
         page.wait_for_timeout(1500)
 
     # Пошагово удаляем каждый черновик с задержкой между удалениями
@@ -98,4 +98,4 @@ def clear_all_resumes_from_account(page: Page):
             page.wait_for_timeout(1000)
 
         resume.delete_resume_modal.wait_for(state="hidden", timeout=5000)
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")

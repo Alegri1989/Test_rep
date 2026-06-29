@@ -10,7 +10,6 @@ EMPLOYER_EDIT_INFO_URL = "https://gsz.gov.by/registration/employer/business-enti
 def open_employer_info_page(auth_employer_page: Page) -> Page:
     """Открывает страницу сведений о нанимателе (auth уже в состоянии нанимателя)."""
     goto_with_retry(auth_employer_page, EMPLOYER_INFO_URL, wait_until="load")
-    auth_employer_page.wait_for_load_state("networkidle")
     return auth_employer_page
 
 
@@ -18,5 +17,4 @@ def open_employer_info_page(auth_employer_page: Page) -> Page:
 def open_employer_edit_info_page(auth_employer_page: Page) -> Page:
     """Открывает страницу редактирования сведений о нанимателе."""
     goto_with_retry(auth_employer_page, EMPLOYER_EDIT_INFO_URL, wait_until="load")
-    auth_employer_page.wait_for_load_state("networkidle")
     return auth_employer_page

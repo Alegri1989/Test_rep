@@ -56,7 +56,7 @@ class TestBusinessEntityInfoPageElements:
 
         with allure.step("Клик по кнопке 'Редактировать' сведения о ЮЛ"):
             info_page.edit_info_btn.click()
-            open_employer_info_page.wait_for_load_state("networkidle")
+            open_employer_info_page.wait_for_load_state("load")
 
         with allure.step("ОР: URL содержит /business-entity-info/edit/"):
             expect(open_employer_info_page).to_have_url(
@@ -264,7 +264,7 @@ class TestCreateWorkplace:
 
         with allure.step("Клик по кнопке создания рабочего места"):
             info_page.create_workplace_btn.click()
-            open_employer_info_page.wait_for_load_state("networkidle")
+            open_employer_info_page.wait_for_load_state("load")
 
         with allure.step("ОР: URL содержит /create-workplace/"):
             expect(open_employer_info_page).to_have_url(
@@ -330,7 +330,7 @@ class TestCreateWorkplace:
 
         with allure.step("Шаг 1: Переход на страницу создания рабочего места"):
             goto_with_retry(page, CREATE_WORKPLACE_URL, wait_until="load")
-            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("load")
 
         with allure.step("Шаг 2: Заполнение формы и отправка"):
             create_page = EmployerCreateWorkplacePage(page)
@@ -345,7 +345,7 @@ class TestCreateWorkplace:
 
         with allure.step("Шаг 3: Возврат на страницу сведений о ЮЛ"):
             goto_with_retry(page, EMPLOYER_INFO_URL, wait_until="load")
-            page.wait_for_load_state("networkidle")
+            page.wait_for_load_state("load")
 
         with allure.step(f"Шаг 4: Поиск созданного рабочего места '{workplace['name']}'"):
             info_page.search_workplace(workplace["name"])
@@ -396,6 +396,9 @@ class TestEditEmployerInfo:
         page = open_employer_edit_info_page
         contact = app_config["employer"]["test_contact_person"]
         edit_page = EmployerEditInfoPage(page)
+
+        with allure.step("Прекондишн: удаление остатков от предыдущих прогонов"):
+            edit_page.cleanup_contacts_with_fio(contact["fio"])
 
         with allure.step("Шаг 1: Нажатие 'Добавить контактное лицо'"):
             edit_page.add_contact_person()

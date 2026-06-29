@@ -43,11 +43,10 @@ def run_employer_auth(pytestconfig):
         login_page = LoginPage(page)
         login_page.login(employer["email"], employer["password"])
 
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
         page.wait_for_timeout(1000)
 
         goto_with_retry(page, EMPLOYER_INFO_URL, wait_until="load")
-        page.wait_for_load_state("networkidle")
 
         context.storage_state(path=EMPLOYER_AUTH_STATE)
         browser.close()
@@ -104,7 +103,6 @@ def auth_employer_page(pytestconfig, request, run_employer_auth):
         )
 
         goto_with_retry(page, EMPLOYER_INFO_URL, wait_until="load")
-        page.wait_for_load_state("networkidle")
 
         request.node.funcargs["page_object"] = page
 

@@ -122,8 +122,8 @@ class TestResumeIntegration:
 
                 expect(resume.exp_org_input).to_have_value(test_org)
                 expect(resume.edu_name_input).to_have_value(test_edu)
-                expect(resume.language_dropdown_1).to_have_value("4")
-                expect(resume.lang_level_dropdown_1).to_have_value("10")
+                expect(resume.language_dropdown).to_have_value("4")
+                expect(resume.lang_level_dropdown).to_have_value("10")
                 expect(resume.additional_info_textarea).to_have_value(test_info)
 
         finally:
@@ -154,7 +154,7 @@ class TestResumeIntegration:
 
                 open_create_resume_page.wait_for_timeout(1000)
                 resume.popup_confirm_delete_btn.click()
-                open_create_resume_page.wait_for_load_state("networkidle")
+                open_create_resume_page.wait_for_load_state("load")
 
             with allure.step("ОР 3: Удаленное резюме полностью исчезло из списка"):
                 open_create_resume_page.wait_for_timeout(1000)

@@ -33,11 +33,10 @@ class EmployerEditInfoPage:
         save_btn = self.page.locator("button.js-ajax-save-btn").last
         save_btn.wait_for(state="visible", timeout=5000)
         save_btn.click()
-        self.page.wait_for_load_state("networkidle", timeout=20000)
-        self.page.wait_for_timeout(500)
+        self.page.wait_for_timeout(3000)
         # Reload verifies DB persistence: если контакт в БД — ФИО будет видно после перезагрузки
         self.page.reload()
-        self.page.wait_for_load_state("networkidle", timeout=20000)
+        self.page.wait_for_load_state("load")
 
     def delete_last_contact_person(self):
         """Кликает кнопку удаления последнего видимого контактного лица.
@@ -162,7 +161,7 @@ class EmployerEditInfoPage:
                 except Exception:
                     continue
 
-            self.page.wait_for_load_state("networkidle", timeout=10000)
+            self.page.wait_for_timeout(1500)
         finally:
             self.page.remove_listener("response", _on_response)
             self.page.remove_listener("dialog", handler)
@@ -176,4 +175,68 @@ class EmployerEditInfoPage:
         if fio_inputs.nth(last_visible_idx).is_visible():
             logging.warning("delete_last: FIO still visible after clicks — trying reload to confirm DB delete")
             self.page.reload()
-            self.page.wait_for_load_state("networkidle", timeout=20000)
+            self.page.wait_for_load_state("load")
+
+    def cleanup_contacts_with_fio(self, fio: str):
+        """Удаляет все контактные лица с указанным ФИО — прекондишн для изоляции прогонов."""
+        self.page.reload()
+        self.page.wait_for_load_state("load")
+
+        found = True
+        while found:
+            found = False
+            fio_inputs = self._get_contact_fio_inputs()
+            for i in range(fio_inputs.count() - 1, -1, -1):
+                if not fio_inputs.nth(i).is_visible():
+                    continue
+                try:
+                    val = fio_inputs.nth(i).input_value()
+                except Exception:
+                    continue
+                if val != fio:
+                    continue
+
+                found = True
+                fio_id = fio_inputs.nth(i).get_attribute("id")
+                delete_btn_idx = self.page.evaluate("""(fioId) => {
+                    const fio = document.getElementById(fioId);
+                    if (!fio) return -1;
+                    const form = fio.closest('[data-formset-form]');
+                    if (!form) return -1;
+                    const deleteBtn = form.querySelector('[data-formset-delete-button]');
+                    if (!deleteBtn) return -1;
+                    const allBtns = Array.from(document.querySelectorAll('[data-formset-delete-button]'));
+                    return allBtns.indexOf(deleteBtn);
+                }""", fio_id)
+                if delete_btn_idx < 0:
+                    continue
+
+                handler = lambda d: d.accept()
+                self.page.on("dialog", handler)
+                try:
+                    delete_btn = self.page.locator("button[data-formset-delete-button]").nth(delete_btn_idx)
+                    delete_btn.scroll_into_view_if_needed()
+                    delete_btn.click()
+                    self.page.wait_for_timeout(2000)
+                    for sel in [
+                        ".modal.show button.btn-danger",
+                        ".modal.show button.btn-primary",
+                        "[role='dialog'] button:has-text('Да')",
+                        "[role='dialog'] button:has-text('Удалить')",
+                        ".swal2-confirm",
+                    ]:
+                        try:
+                            btn = self.page.locator(sel).first
+                            if btn.is_visible(timeout=400):
+                                btn.click()
+                                self.page.wait_for_timeout(1000)
+                                break
+                        except Exception:
+                            continue
+                finally:
+                    self.page.remove_listener("dialog", handler)
+
+                # Reload to confirm deletion persisted to DB
+                self.page.reload()
+                self.page.wait_for_load_state("load")
+                break  # перезапустить цикл со свежим DOM
