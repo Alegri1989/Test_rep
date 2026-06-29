@@ -15,6 +15,7 @@ CREATE_WORKPLACE_URL = "https://gsz.gov.by/registration/employer/business-entity
 @allure.feature("Страница сведений о юридическом лице")
 class TestBusinessEntityInfoPageElements:
 
+    @pytest.mark.skip(reason="Видимость покрывается test_edit_employer_info_btn_navigates")
     @allure.title("Кнопка 'Редактировать' сведения о ЮЛ видима на странице")
     def test_edit_employer_info_btn_visible(self, open_employer_info_page: Page, app_config):
         """
@@ -63,6 +64,7 @@ class TestBusinessEntityInfoPageElements:
                 "https://gsz.gov.by/registration/employer/business-entity-info/edit/"
             )
 
+    @pytest.mark.skip(reason="Видимость покрывается test_create_workplace_btn_navigates")
     @allure.title("Кнопка создания адреса рабочего места видима на странице")
     def test_create_workplace_btn_visible(self, open_employer_info_page: Page):
         """
@@ -84,6 +86,7 @@ class TestBusinessEntityInfoPageElements:
         with allure.step("Проверка видимости кнопки создания рабочего места"):
             expect(info_page.create_workplace_btn).to_be_visible()
 
+    @pytest.mark.skip(reason="Наличие карточки покрывается test_permanent_workplace_card_has_all_buttons")
     @allure.title("Постоянная карточка рабочего места 'Филиал тест' присутствует на странице")
     def test_permanent_workplace_card_present(self, open_employer_info_page: Page, app_config):
         """
@@ -105,72 +108,33 @@ class TestBusinessEntityInfoPageElements:
             card_title = open_employer_info_page.locator("h4.job-title", has_text=permanent_name)
             expect(card_title).to_be_visible()
 
-    @allure.title("Кнопка 'Редактировать' присутствует на постоянной карточке рабочего места")
-    def test_permanent_workplace_edit_btn(self, open_employer_info_page: Page, app_config):
+    @allure.title("Все кнопки управления присутствуют на постоянной карточке рабочего места")
+    def test_permanent_workplace_card_has_all_buttons(self, open_employer_info_page: Page, app_config):
         """
-        Бизнес-кейс: У каждого рабочего места должна быть кнопка редактирования.
+        Бизнес-кейс: На карточке рабочего места должны присутствовать все кнопки управления.
 
         Прекондишены:
         1. Пользователь авторизован как наниматель.
         2. На странице присутствует карточка «Филиал тест».
 
         Шаги:
-        1. Найти кнопку «Редактировать» на карточке «Филиал тест».
+        1. Найти кнопки «Редактировать», «Редактировать координаты» и «Удалить» на карточке.
+        2. Проверить видимость каждой.
 
         Ожидаемый результат (ОР):
-        - Кнопка «Редактировать» видима на постоянной карточке.
+        - Все три кнопки управления видимы на постоянной карточке.
         """
         info_page = EmployerInfoPage(open_employer_info_page)
         permanent_name = app_config["employer"]["permanent_workplace_name"]
 
         with allure.step(f"Проверка наличия кнопки 'Редактировать' на карточке '{permanent_name}'"):
-            edit_btn = info_page.get_workplace_edit_btn(permanent_name)
-            expect(edit_btn).to_be_visible()
-
-    @allure.title("Кнопка 'Редактировать координаты' присутствует на постоянной карточке рабочего места")
-    def test_permanent_workplace_edit_coords_btn(self, open_employer_info_page: Page, app_config):
-        """
-        Бизнес-кейс: У каждого рабочего места должна быть кнопка редактирования координат.
-
-        Прекондишены:
-        1. Пользователь авторизован как наниматель.
-        2. На странице присутствует карточка «Филиал тест».
-
-        Шаги:
-        1. Найти кнопку «Редактировать координаты» на карточке «Филиал тест».
-
-        Ожидаемый результат (ОР):
-        - Кнопка «Редактировать координаты» видима на постоянной карточке.
-        """
-        info_page = EmployerInfoPage(open_employer_info_page)
-        permanent_name = app_config["employer"]["permanent_workplace_name"]
+            expect(info_page.get_workplace_edit_btn(permanent_name)).to_be_visible()
 
         with allure.step(f"Проверка наличия кнопки 'Редактировать координаты' на карточке '{permanent_name}'"):
-            coords_btn = info_page.get_workplace_edit_coords_btn(permanent_name)
-            expect(coords_btn).to_be_visible()
-
-    @allure.title("Кнопка 'Удалить' присутствует на постоянной карточке рабочего места")
-    def test_permanent_workplace_delete_btn(self, open_employer_info_page: Page, app_config):
-        """
-        Бизнес-кейс: У каждого рабочего места должна быть кнопка удаления.
-
-        Прекондишены:
-        1. Пользователь авторизован как наниматель.
-        2. На странице присутствует карточка «Филиал тест».
-
-        Шаги:
-        1. Найти кнопку «Удалить» на карточке «Филиал тест».
-        2. Проверить её видимость — клик не производить.
-
-        Ожидаемый результат (ОР):
-        - Кнопка «Удалить» видима на постоянной карточке.
-        """
-        info_page = EmployerInfoPage(open_employer_info_page)
-        permanent_name = app_config["employer"]["permanent_workplace_name"]
+            expect(info_page.get_workplace_edit_coords_btn(permanent_name)).to_be_visible()
 
         with allure.step(f"Проверка наличия кнопки 'Удалить' на карточке '{permanent_name}' без клика"):
-            delete_btn = info_page.get_workplace_delete_btn(permanent_name)
-            expect(delete_btn).to_be_visible()
+            expect(info_page.get_workplace_delete_btn(permanent_name)).to_be_visible()
 
 
 @allure.epic("Личный кабинет нанимателя")

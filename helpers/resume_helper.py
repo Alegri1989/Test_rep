@@ -1,3 +1,4 @@
+import re
 import allure
 from playwright.sync_api import Page
 from pages.resume_page import ResumePage
@@ -46,8 +47,8 @@ def fill_and_submit_resume_form(page: Page):
         resume.submit_resume_button.click()
         page.wait_for_timeout(3000)
 
-def fill_and_submit_required_resume_fields(page: Page):
-    """Хелпер для быстрого заполнения только обязательных полей формы резюме (профессия, зарплата, язык)."""
+def fill_and_submit_required_resume_fields(page: Page) -> str | None:
+    """Заполняет обязательные поля формы резюме, отправляет и возвращает ID созданного резюме."""
     resume = ResumePage(page)
 
     with allure.step("Быстрое заполнение обязательных полей резюме"):
@@ -63,7 +64,16 @@ def fill_and_submit_required_resume_fields(page: Page):
         resume.lang_level_dropdown.select_option(label="средний", force=True)
 
         resume.submit_resume_button.click()
-        page.wait_for_timeout(3000)
+        page.wait_for_load_state("domcontentloaded")
+        page.wait_for_timeout(1000)
+
+    last_link = page.locator(
+        "a[href*='/registration/job-seeker/resume/'][href$='/update/']"
+    ).last
+    last_link.wait_for(state="visible", timeout=5000)
+    href = last_link.get_attribute("href")
+    match = re.search(r"/resume/(\d+)/", href) if href else None
+    return match.group(1) if match else None
 
 def clear_all_resumes_from_account(page: Page):
     """Полностью удаляет все резюме со страницы списка (снимает с публикации и удаляет)."""
@@ -99,3 +109,34 @@ def clear_all_resumes_from_account(page: Page):
 
         resume.delete_resume_modal.wait_for(state="hidden", timeout=5000)
         page.wait_for_load_state("load")
+
+
+def clear_resume_by_id(page: Page, resume_id: str):
+    """Снимает с публикации (если нужно) и удаляет конкретное резюме по его ID."""
+    resume = ResumePage(page)
+    resume_list_url = "https://gsz.gov.by/registration/job-seeker/resume/list/"
+
+    if page.url != resume_list_url:
+        goto_with_retry(page, resume_list_url, wait_until="load")
+        page.wait_for_load_state("load")
+
+    unpublish_link = resume.get_unpublish_btn_by_id(resume_id)
+    if unpublish_link.count() > 0:
+        unpublish_link.click()
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(1000)
+
+    # Находим позицию резюме в списке по edit-ссылке и кликаем соответствующую кнопку удаления
+    edit_links = page.locator(
+        "a[href*='/registration/job-seeker/resume/'][href$='/update/']"
+    ).all()
+    delete_buttons = page.get_by_role("button", name="Удалить")
+
+    for idx, link in enumerate(edit_links):
+        href = link.get_attribute("href")
+        if href and f"/resume/{resume_id}/" in href:
+            delete_buttons.nth(idx).click()
+            resume.popup_confirm_delete_btn.wait_for(state="visible", timeout=3000)
+            resume.popup_confirm_delete_btn.click()
+            resume.delete_resume_modal.wait_for(state="hidden", timeout=5000)
+            return
