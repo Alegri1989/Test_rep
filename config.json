@@ -69,6 +69,12 @@
     "fake_resume_id": "99207"
   },
   "belarus_min_wage": 858,
+  "test_response": {
+    "employer_unp": "999999999",
+    "vacancy_id": "1910652",
+    "resume_id": "99985",
+    "cover_letter_text": "Автотест: тестовое сопроводительное письмо"
+  },
   "employer": {
     "email": "grisha.alexeyev89@gmail.com",
     "password": "Agm5776609",
