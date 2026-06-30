@@ -229,12 +229,25 @@ def test_create_full_vacancy_workflow(open_create_vacancy_page: Page, app_config
                             + '.text-danger, [class*="error"] li, .invalid-feedback'
                         );
                         return Array.from(items).map(el => {
+                            // Ищем ближайший input/select/textarea к ошибке,
+                            // затем <label for="id"> — точнее, чем первый label в контейнере
                             const group = el.closest(
                                 '.form-group, .form-row, .col-12, .col-md-12'
                             );
-                            const lbl = group
-                                ? (group.querySelector('label') || {}).innerText || '?'
-                                : '?';
+                            let lbl = '?';
+                            if (group) {
+                                const field = group.querySelector('input, select, textarea');
+                                if (field && field.id) {
+                                    const forLabel = document.querySelector(
+                                        'label[for="' + field.id + '"]'
+                                    );
+                                    lbl = forLabel
+                                        ? forLabel.innerText
+                                        : (group.querySelector('label') || {}).innerText || '?';
+                                } else {
+                                    lbl = (group.querySelector('label') || {}).innerText || '?';
+                                }
+                            }
                             return lbl.trim() + ': ' + el.innerText.trim();
                         }).filter(t => t.trim() !== ': ');
                     }
