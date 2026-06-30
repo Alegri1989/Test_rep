@@ -88,6 +88,14 @@
       "phone": "+375-29-111-11-11",
       "email": "test_contact@test.by"
     },
+    "test_gpd": {
+      "type_gpd_label": "Выполнение работ",
+      "work_type": "Автотест: наименование работы ГПД",
+      "area_label": "Административная работа, секретариат, АХО",
+      "number_person": "2",
+      "salary": "1500.00",
+      "comments": "Автотест примечание ГПД"
+    },
     "test_vacancy": {
       "contact_person_label": "Тест Тест",
       "profession": "Авербандщик",
