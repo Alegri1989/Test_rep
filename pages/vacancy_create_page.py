@@ -49,6 +49,7 @@ class VacancyCreatePage:
         self.workplace_container = page.locator("#select2-id_workplace-container")
 
         # Условия работы
+        self.employment_nature_select = page.locator("#id_employment_nature")
         self.work_mode_select = page.locator("#id_work_mode")
         self.for_foreigner_checkbox = page.locator("#id_for_foreigner")
         self.housing_checkbox = page.locator("#id_housing")
@@ -135,20 +136,15 @@ class VacancyCreatePage:
         self._select_s2(self.workplace_container, workplace_text, "рабочее место")
 
     def set_workplace_by_id(self, workplace_id: int, workplace_text: str):
-        """Устанавливает рабочее место через Select2 API (trigger select).
-        Обновляет как скрытый <select>, так и внутреннее состояние Select2,
-        чтобы pre-submit JS-хэндлер не обнулил значение."""
+        """Устанавливает рабочее место программно через Select2 API."""
         logging.debug(f"Действие: Установка рабочего места id={workplace_id} через Select2 API")
         self.page.evaluate(f"""
             (function() {{
-                // Canonical Select2 v4 approach: append option then trigger change.
-                // This updates both the DOM <select> and Select2's internal state.
                 var option = new Option('{workplace_text}', '{workplace_id}', true, true);
                 jQuery('#id_workplace').append(option).trigger('change');
             }})();
         """)
         self.page.wait_for_timeout(800)
-        # Верификация
         val = self.page.locator("#id_workplace").evaluate("el => el.value")
         if str(val) != str(workplace_id):
             raise AssertionError(

@@ -139,6 +139,10 @@ def test_create_full_vacancy_workflow(open_create_vacancy_page: Page, app_config
 
         # ── Шаг 8: Условия работы и чек-боксы ────────────────────────────────
         with allure.step("Шаг 8: Режим работы и чек-боксы условий"):
+            first_nature = form.employment_nature_select.locator(
+                "option:not([value=''])"
+            ).first.get_attribute("value")
+            form.employment_nature_select.select_option(value=first_nature)
             form.work_mode_select.select_option(label="Одна смена")
 
             form.for_foreigner_checkbox.check(force=True)
@@ -195,30 +199,23 @@ def test_create_full_vacancy_workflow(open_create_vacancy_page: Page, app_config
 
         # ── Шаг 11б: Адрес рабочего места (последним — после всех AJAX) ──────
         with allure.step(f"Шаг 11б: Выбор адреса рабочего места '{workplace_name}'"):
-            form.set_workplace_by_id(workplace_id, workplace_name)
+            form.select_workplace(workplace_name)
+            page.wait_for_load_state("networkidle", timeout=15000)
+            page.wait_for_timeout(500)
 
         # ── Шаг 12: Сохранение формы ──────────────────────────────────────────
         with allure.step("Шаг 12: Нажатие 'Сохранить вакансию'"):
-            import urllib.parse as _urlparse
-
-            def _fix_workplace(route):
-                req = route.request
-                if req.method == "POST":
-                    body = req.post_data or ""
-                    params = _urlparse.parse_qsl(body, keep_blank_values=True)
-                    wp_vals = [v for k, v in params if k == "workplace"]
-                    print(f"INTERCEPT POST url={req.url[-40:]} workplace_vals={wp_vals}")
-                    if "vacancy/create" in req.url:
-                        params = [(k, v) for k, v in params if k != "workplace"]
-                        params.append(("workplace", str(workplace_id)))
-                        route.continue_(post_data=_urlparse.urlencode(params))
-                        return
-                route.continue_()
-
-            page.route("**", _fix_workplace)
+            # JS-обработчик Select2 заполняет region/district/address из данных workplace,
+            # но оставляет их disabled (только для отображения). Снимаем disabled
+            # перед сабмитом, чтобы Django получил их как обязательные поля.
+            page.evaluate("""
+                ['id_region', 'id_district', 'id_address'].forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) el.disabled = false;
+                });
+            """)
             with page.expect_navigation(wait_until="domcontentloaded", timeout=30000):
                 form.submit_button.click()
-            page.unroute("**", _fix_workplace)
             page.wait_for_load_state("networkidle", timeout=15000)
             page.wait_for_timeout(500)
 
