@@ -15,10 +15,15 @@ class TestVacancySearchFavorites:
     @allure.title("Добавление вакансии в избранное")
     def test_add_to_favorites(self, vacancy_search_page: JobSeekerVacancySearchPage):
         vacancy_page = vacancy_search_page
-        initial_fav_state = vacancy_page.get_favorite_state(0)
         
+        # Убедимся, что вакансия не в избранном
+        if vacancy_page.get_favorite_state(0):
+            vacancy_page.toggle_favorite(0)
+            vacancy_page.page.wait_for_timeout(1000)
+        
+        initial_fav_state = vacancy_page.get_favorite_state(0)
         vacancy_page.toggle_favorite(0)
-        vacancy_page.page.wait_for_timeout(500)
+        vacancy_page.page.wait_for_timeout(1000)
         new_fav_state = vacancy_page.get_favorite_state(0)
         
         assert initial_fav_state != new_fav_state, "Состояние избранного не изменилось"

@@ -54,7 +54,11 @@ class JobSeekerVacancySearchPage:
 
     def check_show_favorites(self):
         self.show_favorites_checkbox.wait_for(state="visible", timeout=30000)
-        # Кликаем по label, а не по checkbox напрямую
+        # Убедимся, что фильтр выключен
+        if self.show_favorites_checkbox.is_checked():
+            self.page.locator("label[for='id_tag']").click()
+            self.page.wait_for_timeout(1000)
+        # Включаем фильтр
         self.page.locator("label[for='id_tag']").click()
         self.page.wait_for_timeout(2000)  # Даём время на применение фильтра
 
@@ -63,8 +67,11 @@ class JobSeekerVacancySearchPage:
 
     def click_print_favorites(self, timeout=30000):
         self.print_favorites_btn.wait_for(state="visible", timeout=timeout)
+        # Добавляем ожидание перед кликом
+        self.page.wait_for_timeout(1000)
         with self.page.expect_download(timeout=timeout) as download_info:
             self.print_favorites_btn.click()
+            self.page.wait_for_timeout(1000)  # Даём время на инициализацию скачивания
         return download_info.value
 
     def click_clear_favorites(self):
@@ -74,7 +81,9 @@ class JobSeekerVacancySearchPage:
         self.clear_favorites_btn.wait_for(state="visible")
         self.page.on("dialog", lambda dialog: dialog.accept())
         self.click_clear_favorites()
-        self.page.wait_for_timeout(500)
+        self.page.wait_for_timeout(2000)  # Увеличили время ожидания
+        # Проверяем, что диалог закрылся
+        expect(self.clear_favorites_btn).not_to_be_hidden()
 
     def set_paginate_by(self, value: str):
         self.paginate_by_select.select_option(value)
