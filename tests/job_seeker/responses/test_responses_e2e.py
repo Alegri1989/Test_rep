@@ -2,6 +2,7 @@ import pytest
 import allure
 from playwright.sync_api import Page
 from pages.job_seeker_responses_page import JobSeekerResponsesPage
+from helpers.network_helper import goto_with_retry
 
 EMPLOYER_RESPONSES_URL = "https://gsz.gov.by/registration/employer/message/responses/list/"
 
