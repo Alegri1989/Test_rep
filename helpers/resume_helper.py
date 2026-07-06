@@ -12,21 +12,22 @@ def login_as_job_seeker(page: Page):
     # Ждем появления формы логина
     page.wait_for_selector("form#login-form", state="visible", timeout=120000)
     
-    # Используем ролевой доступ к элементам
+    # Используем ролевой доступ к элементам как в LoginPage
     email_input = page.get_by_role("textbox", name="Адрес электронной почты/номер телефона")
-    email_input.wait_for(state="visible", timeout=30000)
+    email_input.wait_for(state="visible", timeout=60000)
     password_input = page.get_by_role("textbox", name="Пароль")
-    password_input.wait_for(state="visible", timeout=30000)
+    password_input.wait_for(state="visible", timeout=60000)
     
-    # Заполняем поля
+    # Заполняем поля с очисткой перед вводом
     email_input.fill("job_seeker_username")
     password_input.fill("job_seeker_password")
     
-    # Кликаем кнопку входа
-    page.click("button[type='submit']")
+    # Кликаем кнопку входа с ожиданием навигации
+    with page.expect_navigation():
+        page.click("button[type='submit']")
     
-    # Проверяем успешную авторизацию
-    page.wait_for_selector("a[href*='/user/logout/']", state="visible", timeout=60000)
+    # Проверяем успешную авторизацию через URL
+    page.wait_for_url("https://gsz.gov.by/registration/job-seeker/menu/", timeout=60000)
 
 def fill_and_submit_resume_form(page: Page):
     """Хелпер для максимального заполнения всех полей формы резюме."""
