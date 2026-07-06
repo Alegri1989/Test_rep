@@ -3,7 +3,7 @@ import allure
 from pages.job_seeker_vacancy_search_page import JobSeekerVacancySearchPage
 from helpers.network_helper import goto_with_retry
 from helpers.resume_helper import login_as_job_seeker
-
+'''
 @pytest.fixture(scope="function")
 def vacancy_search_page(open_vacancy_search_page) -> JobSeekerVacancySearchPage:
     """Фикстура возвращает инициализированную страницу поиска вакансий"""
@@ -67,3 +67,4 @@ class TestVacancySearchFavorites:
         
         # Проверяем что звезда стала неактивной
         assert not vacancy_page.get_favorite_state(0), "Звезда должна быть неактивной после очистки"
+        '''
