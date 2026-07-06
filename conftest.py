@@ -69,6 +69,15 @@ def run_global_auth(pytestconfig):
 
 
 @pytest.fixture(scope="function")
+def open_create_resume_page(auth_page) -> Page:
+    """Фикстура открывает страницу создания резюме с выполненной авторизацией"""
+    resume_url = "https://gsz.gov.by/registration/job-seeker/resume/create/"
+    goto_with_retry(auth_page, resume_url, wait_until="load")
+    auth_page.wait_for_selector("#id_desired_profession", state="visible", timeout=30000)
+    auth_page.wait_for_load_state("networkidle")
+    return auth_page
+
+@pytest.fixture(scope="function")
 def open_vacancy_search_page(auth_page) -> Page:
     """Фикстура открывает страницу поиска вакансий с выполненной авторизацией"""
     vacancy_url = "https://gsz.gov.by/registration/vacancy-search/"
