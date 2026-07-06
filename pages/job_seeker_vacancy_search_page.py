@@ -16,11 +16,34 @@ class JobSeekerVacancySearchPage:
         self.vacancy_cards = page.locator(".job-block")
 
     def navigate(self):
+        """Переход на страницу и базовые проверки"""
         self.page.goto(self.url)
+        self.page.wait_for_selector("#id_profession", state="visible", timeout=60000)
         self.page.wait_for_load_state("networkidle")
 
     def get_favorite_button(self, vacancy_index: int) -> Locator:
+        """Получение кнопки избранного для конкретной вакансии"""
         return self.favorite_btns.nth(vacancy_index)
+    
+    def search_vacancy(self, profession: str):
+        """Поиск вакансий по профессии"""
+        search_input = self.page.locator("#id_profession")
+        search_input.wait_for(state="visible", timeout=30000)
+        search_input.fill(profession)
+        self.page.click("button:has-text('Найти')")
+        self.page.wait_for_load_state("networkidle")
+    
+    def select_region(self, region_name: str):
+        """Выбор региона через Select2"""
+        self.page.click("#select2-id_region-container")
+        self.page.fill(".select2-search__field", region_name)
+        self.page.click(f"li:has-text('{region_name}')")
+    
+    def set_salary_filter(self, min_salary: str, max_salary: str = ""):
+        """Установка фильтра по зарплате"""
+        self.page.fill("#id_salary_min", min_salary)
+        if max_salary:
+            self.page.fill("#id_salary_max", max_salary)
 
     def toggle_favorite(self, vacancy_index: int):
         btn = self.get_favorite_button(vacancy_index)
