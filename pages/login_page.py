@@ -25,14 +25,11 @@ class LoginPage:
         """Вход в систему с честным принятием куки и обработкой редиректа."""
         self.navigate()
 
-        # 1. Честно кликаем по кнопке "Принять" в плашке
-        # Поиск по точному классу кнопки, который вы присылали в HTML верстке
+        # 1. Честно кликаем по кнопке "Принять" в плашке и ждём навигации
         cookie_accept = self.page.locator("a.cookie-panel__info_button")
         cookie_accept.wait_for(state="visible", timeout=5000)
-        cookie_accept.click()
-
-        # 2. Ждем 2 секунды: сайт редиректнет на главную и запишет куки согласия в сессию
-        self.page.wait_for_timeout(2000)
+        with self.page.expect_navigation(wait_until="load", timeout=10000):
+            cookie_accept.click()
 
         # 3. Теперь, когда мы на главной и плашки больше нет, снова переходим на страницу входа
         self.navigate()

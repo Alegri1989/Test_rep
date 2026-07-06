@@ -81,7 +81,7 @@ def auth_employer_page(pytestconfig, request, run_employer_auth):
         )
         context = browser.new_context(
             storage_state=EMPLOYER_AUTH_STATE,
-            record_video_dir="videos/",
+            # record_video_dir="videos/",
             locale="ru-RU",
         )
         page = context.new_page()
@@ -108,7 +108,25 @@ def auth_employer_page(pytestconfig, request, run_employer_auth):
 
         yield page
 
+        try:
+            if not page.is_closed():
+                page.wait_for_load_state("networkidle", timeout=3000)
+        except Exception:
+            pass
+
         logging.shutdown()
+
+        if os.path.exists("log.txt"):
+            try:
+                with open("log.txt", "r", encoding="utf-8", errors="replace") as f:
+                    log_content = f.read()
+                if log_content.strip():
+                    allure.attach(log_content, name="Сетевые логи", attachment_type=allure.attachment_type.TEXT)
+            except Exception:
+                pass
+            open("log.txt", "w").close()
+
+        logging.config.fileConfig(lof_file_path)
 
         if hasattr(request.node, "rep_call") and request.node.rep_call.failed:
             try:
@@ -120,8 +138,6 @@ def auth_employer_page(pytestconfig, request, run_employer_auth):
                     )
             except Exception:
                 pass
-
-        logging.config.fileConfig(lof_file_path)
 
         context.close()
         browser.close()

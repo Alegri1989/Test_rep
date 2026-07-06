@@ -81,7 +81,7 @@ def call_in_employer_browser(pytestconfig, request, _run_employer_auth_responses
                 )
                 context = browser.new_context(
                     storage_state=_EMPLOYER_AUTH_FILE,
-                    record_video_dir="videos/",
+                    # record_video_dir="videos/",
                     locale="ru-RU",
                 )
                 page = context.new_page()

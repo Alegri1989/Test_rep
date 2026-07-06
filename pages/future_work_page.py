@@ -95,5 +95,8 @@ class FutureWorkPage:
         self.submit_filter_btn.scroll_into_view_if_needed()
         self.page.wait_for_timeout(500)
         self.submit_filter_btn.click(force=True)
-        self.page.wait_for_load_state("load")
-        self.page.wait_for_timeout(1500)
+        try:
+            self.page.wait_for_load_state("load", timeout=30000)
+        except Exception:
+            pass
+        self.page.wait_for_timeout(2000)

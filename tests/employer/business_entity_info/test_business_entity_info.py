@@ -1,5 +1,4 @@
 import allure
-import pytest
 from playwright.sync_api import Page, expect
 from pages.employer_info_page import EmployerInfoPage
 from pages.employer_create_workplace_page import EmployerCreateWorkplacePage
@@ -14,28 +13,6 @@ CREATE_WORKPLACE_URL = "https://gsz.gov.by/registration/employer/business-entity
 @allure.epic("Личный кабинет нанимателя")
 @allure.feature("Страница сведений о юридическом лице")
 class TestBusinessEntityInfoPageElements:
-
-    @pytest.mark.skip(reason="Видимость покрывается test_edit_employer_info_btn_navigates")
-    @allure.title("Кнопка 'Редактировать' сведения о ЮЛ видима на странице")
-    def test_edit_employer_info_btn_visible(self, open_employer_info_page: Page, app_config):
-        """
-        Бизнес-кейс: Наниматель должен видеть кнопку перехода к редактированию сведений.
-
-        Прекондишены:
-        1. Пользователь авторизован как наниматель.
-        2. Открыта страница /registration/employer/business-entity-info/.
-
-        Шаги:
-        1. Найти кнопку «Редактировать» сведения о ЮЛ.
-        2. Проверить её видимость.
-
-        Ожидаемый результат (ОР):
-        - Кнопка редактирования отображается на странице.
-        """
-        info_page = EmployerInfoPage(open_employer_info_page)
-
-        with allure.step("Проверка видимости кнопки 'Редактировать' сведения о ЮЛ"):
-            expect(info_page.edit_info_btn).to_be_visible()
 
     @allure.title("Кнопка 'Редактировать' сведения о ЮЛ ведёт на страницу редактирования")
     def test_edit_employer_info_btn_navigates(self, open_employer_info_page: Page):
@@ -63,50 +40,6 @@ class TestBusinessEntityInfoPageElements:
             expect(open_employer_info_page).to_have_url(
                 "https://gsz.gov.by/registration/employer/business-entity-info/edit/"
             )
-
-    @pytest.mark.skip(reason="Видимость покрывается test_create_workplace_btn_navigates")
-    @allure.title("Кнопка создания адреса рабочего места видима на странице")
-    def test_create_workplace_btn_visible(self, open_employer_info_page: Page):
-        """
-        Бизнес-кейс: Наниматель должен видеть кнопку добавления нового рабочего места.
-
-        Прекондишены:
-        1. Пользователь авторизован как наниматель.
-        2. Открыта страница сведений о ЮЛ.
-
-        Шаги:
-        1. Найти кнопку создания рабочего места.
-        2. Проверить её видимость.
-
-        Ожидаемый результат (ОР):
-        - Кнопка создания рабочего места отображается.
-        """
-        info_page = EmployerInfoPage(open_employer_info_page)
-
-        with allure.step("Проверка видимости кнопки создания рабочего места"):
-            expect(info_page.create_workplace_btn).to_be_visible()
-
-    @pytest.mark.skip(reason="Наличие карточки покрывается test_permanent_workplace_card_has_all_buttons")
-    @allure.title("Постоянная карточка рабочего места 'Филиал тест' присутствует на странице")
-    def test_permanent_workplace_card_present(self, open_employer_info_page: Page, app_config):
-        """
-        Бизнес-кейс: На странице должен быть предсозданный «Филиал тест» как эталонная сущность.
-
-        Прекондишены:
-        1. Пользователь авторизован как наниматель.
-        2. На странице создан постоянный «Филиал тест» (не удаляется автотестами).
-
-        Шаги:
-        1. Найти карточку с заголовком «Филиал тест».
-
-        Ожидаемый результат (ОР):
-        - Заголовок карточки «Филиал тест» виден на странице.
-        """
-        permanent_name = app_config["employer"]["permanent_workplace_name"]
-
-        with allure.step(f"Проверка наличия карточки '{permanent_name}'"):
-            card_title = open_employer_info_page.locator("h4.job-title", has_text=permanent_name)
-            expect(card_title).to_be_visible()
 
     @allure.title("Все кнопки управления присутствуют на постоянной карточке рабочего места")
     def test_permanent_workplace_card_has_all_buttons(self, open_employer_info_page: Page, app_config):

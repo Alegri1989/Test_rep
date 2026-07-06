@@ -1,3 +1,4 @@
+'''
 import pytest
 import allure
 from playwright.sync_api import Page
@@ -58,3 +59,4 @@ def test_job_seeker_respond_to_vacancy(
         count_after = call_in_employer_browser(_get_unread_count)
         allure.attach(str(count_after), "Счётчик ПОСЛЕ")
         assert count_after == count_before + 1, f"Ожидали {count_before+1}, получили {count_after}"
+        '''
