@@ -8,10 +8,20 @@ from helpers.network_helper import goto_with_retry
 def login_as_job_seeker(page: Page):
     """Авторизует пользователя как соискателя."""
     page.goto("https://gsz.gov.by/user/login/")
-    page.fill("#id_username", "job_seeker_username")
-    page.fill("#id_password", "job_seeker_password")
+    
+    # Ждем появления поля ввода логина
+    username_field = page.locator("#id_username")
+    username_field.wait_for(state="visible", timeout=60000)
+    
+    # Заполняем поля
+    username_field.fill("job_seeker_username")
+    page.locator("#id_password").fill("job_seeker_password")
+    
+    # Кликаем кнопку входа
     page.click("button[type='submit']")
-    page.wait_for_load_state("networkidle")
+    
+    # Проверяем успешную авторизацию
+    page.wait_for_selector("a[href*='/user/logout/']", state="visible", timeout=60000)
 
 def fill_and_submit_resume_form(page: Page):
     """Хелпер для максимального заполнения всех полей формы резюме."""

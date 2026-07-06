@@ -24,10 +24,12 @@ class JobSeekerVacancySearchPage:
 
     def toggle_favorite(self, vacancy_index: int):
         btn = self.get_favorite_button(vacancy_index)
+        btn.wait_for(state="visible", timeout=60000)
         btn.click()
         self.page.wait_for_timeout(500)  # Даем время на обновление состояния
 
     def check_show_favorites(self):
+        self.show_favorites_checkbox.wait_for(state="visible", timeout=60000)
         self.show_favorites_checkbox.check()
 
     def uncheck_show_favorites(self):
