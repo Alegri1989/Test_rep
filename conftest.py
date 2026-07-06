@@ -5,7 +5,7 @@ import logging.config
 from pathlib import Path
 import pytest
 import allure
-from playwright.sync_api import sync_playwright
+from playwright.sync_api import sync_playwright, Page
 
 _ROOT = Path(__file__).parent
 sys.path.insert(0, str(_ROOT))
