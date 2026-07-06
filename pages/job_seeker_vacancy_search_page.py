@@ -34,16 +34,17 @@ class JobSeekerVacancySearchPage:
         self.show_favorites_checkbox.uncheck()
 
     def click_print_favorites(self):
-        with self.page.expect_popup() as popup_info:
-            self.print_favorites_btn.click()
-        return popup_info.value
+        self.print_favorites_btn.wait_for(state="visible")
+        self.print_favorites_btn.click()
 
     def click_clear_favorites(self):
         self.clear_favorites_btn.click()
 
     def confirm_clear_favorites(self):
+        self.clear_favorites_btn.wait_for(state="visible")
         self.page.on("dialog", lambda dialog: dialog.accept())
         self.click_clear_favorites()
+        self.page.wait_for_timeout(500)
 
     def set_paginate_by(self, value: str):
         self.paginate_by_select.select_option(value)
@@ -56,4 +57,6 @@ class JobSeekerVacancySearchPage:
 
     def get_favorite_state(self, vacancy_index: int) -> bool:
         btn = self.get_favorite_button(vacancy_index)
-        return "fas fa-star" in btn.locator("i").get_attribute("class")
+        btn.wait_for(state="visible")
+        class_list = btn.locator("i").get_attribute("class")
+        return "fas fa-star" in class_list

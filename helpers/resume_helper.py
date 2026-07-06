@@ -5,6 +5,14 @@ from pages.resume_page import ResumePage
 from helpers.network_helper import goto_with_retry
 
 
+def login_as_job_seeker(page: Page):
+    """Авторизует пользователя как соискателя."""
+    page.goto("https://gsz.gov.by/user/login/")
+    page.fill("#id_username", "job_seeker_username")
+    page.fill("#id_password", "job_seeker_password")
+    page.click("button[type='submit']")
+    page.wait_for_load_state("networkidle")
+
 def fill_and_submit_resume_form(page: Page):
     """Хелпер для максимального заполнения всех полей формы резюме."""
     resume = ResumePage(page)
