@@ -87,7 +87,7 @@ def auth_page(pytestconfig, request):
 
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=is_headless, args=["--lang=ru-RU"], slow_mo=slow_mo_val, channel="chrome")
-        context = browser.new_context(storage_state=AUTH_STATE_PATH, record_video_dir="videos/", locale="ru-RU")
+        context = browser.new_context(storage_state=AUTH_STATE_PATH, locale="ru-RU")  # record_video_dir="videos/"
         page = context.new_page()
 
         file_logger = logging.getLogger("file")
@@ -111,24 +111,26 @@ def auth_page(pytestconfig, request):
 
         yield page
 
-        # Закрываем логи и освобождаем файл
+        try:
+            if not page.is_closed():
+                page.wait_for_load_state("networkidle", timeout=3000)
+        except Exception:
+            pass
+
         logging.shutdown()
 
-        # Прикрепляем готовый log.txt в Allure
         if os.path.exists("log.txt"):
             try:
-                if not page.is_closed():
-                    page.wait_for_load_state("networkidle", timeout=3000)
+                with open("log.txt", "r", encoding="utf-8", errors="replace") as f:
+                    log_content = f.read()
+                if log_content.strip():
+                    allure.attach(log_content, name="Сетевые логи", attachment_type=allure.attachment_type.TEXT)
             except Exception:
                 pass
+            open("log.txt", "w").close()
 
-                # Закрываем логи и освобождаем файл
-            logging.shutdown()
-
-        # Переинициализируем логгер обратно для следующих тестов сессии
         logging.config.fileConfig(lof_file_path)
 
-        # Автоматический скриншот при падении теста
         if hasattr(request.node, "rep_call") and request.node.rep_call.failed:
             try:
                 if not page.is_closed():
