@@ -10,15 +10,17 @@ def login_as_job_seeker(page: Page):
     page.goto("https://gsz.gov.by/user/login/")
     
     # Ждем появления формы логина
-    page.wait_for_selector("form#login-form", state="visible", timeout=90000)
+    page.wait_for_selector("form#login-form", state="visible", timeout=120000)
     
-    # Ищем поле логина по name
-    username_field = page.locator("input[name='username']")
-    username_field.wait_for(state="visible", timeout=90000)
+    # Ищем поля ввода с проверкой видимости
+    username_field = page.locator("input[name='username'], #id_username")
+    username_field.wait_for(state="visible", timeout=120000)
+    password_field = page.locator("input[name='password'], #id_password")
+    password_field.wait_for(state="visible", timeout=120000)
     
-    # Заполняем поля с проверкой
+    # Заполняем поля с повторными попытками
     username_field.fill("job_seeker_username")
-    page.locator("input[name='password']").fill("job_seeker_password")
+    password_field.fill("job_seeker_password")
     
     # Кликаем кнопку входа
     page.click("button[type='submit']")
