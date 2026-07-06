@@ -12,15 +12,15 @@ def login_as_job_seeker(page: Page):
     # Ждем появления формы логина
     page.wait_for_selector("form#login-form", state="visible", timeout=120000)
     
-    # Ищем поля ввода с проверкой видимости
-    username_field = page.locator("input[name='username'], #id_username")
-    username_field.wait_for(state="visible", timeout=120000)
-    password_field = page.locator("input[name='password'], #id_password")
-    password_field.wait_for(state="visible", timeout=120000)
+    # Используем ролевой доступ к элементам
+    email_input = page.get_by_role("textbox", name="Адрес электронной почты/номер телефона")
+    email_input.wait_for(state="visible", timeout=30000)
+    password_input = page.get_by_role("textbox", name="Пароль")
+    password_input.wait_for(state="visible", timeout=30000)
     
-    # Заполняем поля с повторными попытками
-    username_field.fill("job_seeker_username")
-    password_field.fill("job_seeker_password")
+    # Заполняем поля
+    email_input.fill("job_seeker_username")
+    password_input.fill("job_seeker_password")
     
     # Кликаем кнопку входа
     page.click("button[type='submit']")
