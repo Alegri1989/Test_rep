@@ -5,12 +5,9 @@ from helpers.network_helper import goto_with_retry
 from helpers.resume_helper import login_as_job_seeker
 
 @pytest.fixture(scope="function")
-def vacancy_search_page(page) -> JobSeekerVacancySearchPage:
-    login_as_job_seeker(page)
-    vacancy_page = JobSeekerVacancySearchPage(page)
-    goto_with_retry(page, vacancy_page.url)
-    vacancy_page.page.wait_for_load_state("networkidle")
-    return vacancy_page
+def vacancy_search_page(open_vacancy_search_page) -> JobSeekerVacancySearchPage:
+    """Фикстура возвращает инициализированную страницу поиска вакансий"""
+    return JobSeekerVacancySearchPage(open_vacancy_search_page)
 
 @allure.epic("Поиск вакансий для соискателя")
 @allure.feature("Управление избранными вакансиями")

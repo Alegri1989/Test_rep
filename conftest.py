@@ -69,6 +69,15 @@ def run_global_auth(pytestconfig):
 
 
 @pytest.fixture(scope="function")
+def open_vacancy_search_page(auth_page) -> Page:
+    """Фикстура открывает страницу поиска вакансий с выполненной авторизацией"""
+    vacancy_url = "https://gsz.gov.by/registration/vacancy-search/"
+    goto_with_retry(auth_page, vacancy_url, wait_until="load")
+    auth_page.wait_for_selector("#id_profession", state="visible", timeout=30000)
+    auth_page.wait_for_load_state("networkidle")
+    return auth_page
+
+@pytest.fixture(scope="function")
 def auth_page(pytestconfig, request):
     """Создает чистую страницу браузера и крепит артефакты в Allure."""
     # 🛡️ Безопасное чтение флага headed
