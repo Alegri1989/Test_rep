@@ -1,5 +1,5 @@
 import pytest
-import re
+import allure
 from pages.job_seeker_vacancy_search_page import JobSeekerVacancySearchPage
 from helpers.network_helper import goto_with_retry
 
@@ -26,7 +26,6 @@ class TestVacancySearchFavorites:
     @allure.title("Отображение только избранных вакансий")
     def test_show_favorites_only(self, open_vacancy_search_page: JobSeekerVacancySearchPage):
         vacancy_page = open_vacancy_search_page
-        total_vacancies = vacancy_page.get_vacancy_count()
         
         # Добавляем две вакансии в избранное
         vacancy_page.toggle_favorite(0)
