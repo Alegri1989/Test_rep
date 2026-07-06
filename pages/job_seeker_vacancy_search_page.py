@@ -53,17 +53,19 @@ class JobSeekerVacancySearchPage:
         self.page.wait_for_timeout(1000)  # Увеличено время ожидания обновления
 
     def check_show_favorites(self):
-        self.show_favorites_checkbox.wait_for(state="visible", timeout=120000)
-        self.page.wait_for_timeout(1000)  # Дополнительная пауза для стабилизации
-        self.show_favorites_checkbox.check()
-        self.page.wait_for_timeout(1000)  # Ожидание применения фильтра
+        self.show_favorites_checkbox.wait_for(state="visible", timeout=30000)
+        # Кликаем по label, а не по checkbox напрямую
+        self.page.locator("label[for='id_tag']").click()
+        self.page.wait_for_timeout(2000)  # Даём время на применение фильтра
 
     def uncheck_show_favorites(self):
         self.show_favorites_checkbox.uncheck()
 
-    def click_print_favorites(self):
-        self.print_favorites_btn.wait_for(state="visible")
-        self.print_favorites_btn.click()
+    def click_print_favorites(self, timeout=30000):
+        self.print_favorites_btn.wait_for(state="visible", timeout=timeout)
+        with self.page.expect_download(timeout=timeout) as download_info:
+            self.print_favorites_btn.click()
+        return download_info.value
 
     def click_clear_favorites(self):
         self.clear_favorites_btn.click()
@@ -85,6 +87,6 @@ class JobSeekerVacancySearchPage:
 
     def get_favorite_state(self, vacancy_index: int) -> bool:
         btn = self.get_favorite_button(vacancy_index)
-        btn.wait_for(state="visible")
-        class_list = btn.locator("i").get_attribute("class")
-        return "fas fa-star" in class_list
+        btn.wait_for(state="visible", timeout=30000)
+        class_list = btn.locator("i").first.get_attribute("class")
+        return class_list and "fa-star" in class_list  # Проверяем наличие звезды

@@ -40,29 +40,25 @@ class TestVacancySearchFavorites:
         vacancy_page.page.wait_for_selector(".job-block", state="visible")
         assert vacancy_page.get_vacancy_count() == 2, "Отображаются не только избранные вакансии"
 
-    @allure.title("Печать избранных вакансий")
+    @allure.title("Печать избранных вакансий") 
     def test_print_favorites(self, vacancy_search_page: JobSeekerVacancySearchPage):
         vacancy_page = vacancy_search_page
         vacancy_page.toggle_favorite(0)
-        vacancy_page.page.wait_for_timeout(500)
         
-        with vacancy_page.page.context.expect_page() as new_page_info:
-            vacancy_page.click_print_favorites()
-        print_page = new_page_info.value
-        print_page.wait_for_load_state("networkidle")
-        
-        assert "/registration/print-vacancy-list/" in print_page.url, "Открыта не страница печати"
-        print_page.close()
+        # Ждём скачивание PDF вместо новой страницы
+        download = vacancy_page.click_print_favorites()
+        assert download.suggested_filename.endswith('.pdf'), "Должен скачиваться PDF файл"
 
     @allure.title("Очистка избранных вакансий")
     def test_clear_favorites(self, vacancy_search_page: JobSeekerVacancySearchPage):
         vacancy_page = vacancy_search_page
+        
+        # Убедимся что есть избранные
         vacancy_page.toggle_favorite(0)
-        vacancy_page.page.wait_for_timeout(500)
-        initial_fav_state = vacancy_page.get_favorite_state(0)
+        assert vacancy_page.get_favorite_state(0), "Звезда должна быть активной"
         
+        # Очищаем
         vacancy_page.confirm_clear_favorites()
-        vacancy_page.page.wait_for_timeout(1000)
-        new_fav_state = vacancy_page.get_favorite_state(0)
         
-        assert initial_fav_state and not new_fav_state, "Состояние избранного не сброшено"
+        # Проверяем что звезда стала неактивной
+        assert not vacancy_page.get_favorite_state(0), "Звезда должна быть неактивной после очистки"
