@@ -68,7 +68,7 @@ class VacancySearchPage:
         self.vacancy_title_link = page.locator("a.debounced-link")
 
         # Кнопка "Контакты" на карточке вакансии
-        self.vacancy_contacts_button = page.locator("a[href*='detail-public/#contact-info-anchor']")
+        self.vacancy_contacts_button = page.locator("a[href*='#contact-info-anchor']")
 
         # Заблокированная для гостя кнопка "Откликнуться"
         self.apply_button_in_list = page.locator(

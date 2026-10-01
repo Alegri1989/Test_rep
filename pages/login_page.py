@@ -8,10 +8,15 @@ class LoginPage:
         # Ссылка с разделением пробелами для вашей среды
         self.base_url = "https://gsz.gov.by/user/login/"
 
-        # Локаторы формы
-        self.email_input = page.get_by_role("textbox", name="Адрес электронной почты/номер телефона")
-        self.password_input = page.get_by_role("textbox", name="Пароль")
+        # Локаторы формы (по id — стабильно, не зависит от label/role)
+        self.email_input = page.locator("#id_mail")
+        self.password_input = page.locator("#id_password")
         self.submit_button = page.get_by_role("button", name="Войти")
+
+        # Вкладка «Соискатель» — переключает раздел на странице входа ДО логина
+        self.job_seeker_tab = page.locator("#pills-job-seeker-tab")
+        # Вкладка «Вход» внутри раздела соискателя — содержит форму логина
+        self.login_tab = page.locator("#pills-login-tab")
 
         # 🎯 ТОЧНЫЙ ЛОКАТОР КРЕСТИКА КУКИ: ищем кнопку с нужным классом
         self.cookie_close_button = page.locator("button.cookie-panel__info_button2")
@@ -34,12 +39,20 @@ class LoginPage:
         # 3. Теперь, когда мы на главной и плашки больше нет, снова переходим на страницу входа
         self.navigate()
 
-        # 4. Спокойно заполняем форму ввода
-        self.email_input.wait_for(state="visible", timeout=5000)
+        # 4. Переключаемся в раздел «Соискатель» — форма входа соискателя скрыта по умолчанию
+        self.job_seeker_tab.wait_for(state="visible", timeout=10000)
+        self.job_seeker_tab.click()
+
+        # 5. Внутри раздела соискателя активируем вкладку «Вход» (с формой логина)
+        self.login_tab.wait_for(state="visible", timeout=10000)
+        self.login_tab.click()
+
+        # 6. Спокойно заполняем форму ввода
+        self.email_input.wait_for(state="visible", timeout=10000)
         self.email_input.fill(email)
 
-        self.password_input.wait_for(state="visible", timeout=5000)
+        self.password_input.wait_for(state="visible", timeout=10000)
         self.password_input.fill(password)
 
-        # 5. Входим в аккаунт
+        # 7. Входим в аккаунт
         self.submit_button.click()

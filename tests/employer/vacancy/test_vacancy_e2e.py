@@ -104,6 +104,10 @@ def test_create_full_vacancy_workflow(open_create_vacancy_page: Page, app_config
             form.select_profession(vacancy_cfg["profession"])
             page.wait_for_timeout(500)
 
+            # Новое обязательное поле: гибкое название для поиска вакансий
+            form.displayed_profession_input.wait_for(state="visible", timeout=5000)
+            form.displayed_profession_input.fill(vacancy_cfg["displayed_profession"])
+
             # Производная и квалификация — выбираем первый доступный вариант
             derivative_options = form.derivative_select.locator("option:not([value=''])")
             if derivative_options.count() > 0:

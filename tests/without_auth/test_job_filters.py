@@ -152,10 +152,10 @@ def test_guest_filter_by_wage_rate_range(guest_page: Page, vacancy_page: Vacancy
 
         for i in range(count):
             rate_text = rate_elements.nth(i).text_content().strip()
-            match = re.search(r"Ставка:\s*([\d\.]+)", rate_text)
+            match = re.search(r"Ставка:\s*([\d,\.]+)", rate_text)
             assert match, f"Ошибка: не удалось распарсить текст ставки '{rate_text}' на позиции {i + 1}"
 
-            rate_value = float(match.group(1))
+            rate_value = float(match.group(1).replace(",", "."))
             assert 0.25 <= rate_value <= 0.5, (
                 f"Ошибка: на позиции {i + 1} ставка {rate_value} выходит за рамки диапазона 0.25 - 0.5"
             )
@@ -695,9 +695,9 @@ def test_guest_combined_filters(guest_page: Page, vacancy_page: VacancySearchPag
             rate_elements = card.locator("text=/Ставка:/")
             if rate_elements.count() > 0:
                 rate_text = rate_elements.first.text_content().strip()
-                match = re.search(r"Ставка:\s*([\d\.]+)", rate_text)
+                match = re.search(r"Ставка:\s*([\d,\.]+)", rate_text)
                 assert match, f"Ошибка на позиции {i + 1}: не удалось распарсить ставку в '{rate_text}'"
-                rate_value = float(match.group(1))
+                rate_value = float(match.group(1).replace(",", "."))
                 assert 0.25 <= rate_value <= 0.5, (
                     f"Ошибка на позиции {i + 1}: ставка {rate_value} выходит за рамки [0.25; 0.5]"
                 )

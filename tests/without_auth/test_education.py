@@ -54,22 +54,20 @@ def test_guest_filter_by_region(guest_page: Page, education_page: EducationPage)
         education_page.navigate()
         education_page.open_spoiler_if_hidden(education_page.region_filter_title, education_page.region_select)
 
-    with allure.step("Шаг 2: Выбор региона 'Минск'"):
-        education_page.region_select.select_option(label="Минск")
+    with allure.step("Шаг 2: Динамический выбор области с непустой выдачей"):
+        # Некоторые области сейчас не предоставляют обучение (пустая выдача),
+        # поэтому регион выбирается динамически — берём первую область с курсами.
+        region_value, region_label = education_page.find_region_with_results()
+        assert region_value is not None, "Ошибка: ни одна область не предоставляет курсы обучения"
 
-    with allure.step("Шаг 3: Применение фильтра"):
-        education_page.apply_filter_and_wait()
-
-    with allure.step("ОР 1: Верификация выбранного региона во всех карточках результатов"):
-        education_page.region_value.first.wait_for(state="visible", timeout=5000)
-
+    with allure.step(f"ОР 1: Верификация области '{region_label}' во всех карточках"):
         count = education_page.region_value.count()
-        assert count > 0, "Ошибка: фильтрация по региону вернула пустой список курсов обучения"
+        assert count > 0, f"Ошибка: выбранная область '{region_label}' вернула пустой список"
 
         for i in range(count):
             region_text = education_page.region_value.nth(i).text_content().strip()
-            assert region_text == "Минск", (
-                f"Ошибка: на позиции {i + 1} найден курс обучения с чужим регионом '{region_text}'"
+            assert region_text == region_label, (
+                f"Ошибка: на позиции {i + 1} найден курс обучения с чужим регионом '{region_text}' (ожидалось '{region_label}')"
             )
 
 

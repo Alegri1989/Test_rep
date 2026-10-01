@@ -105,6 +105,7 @@
     "test_vacancy": {
       "contact_person_label": "Тест Тест",
       "profession": "Авербандщик",
+      "displayed_profession": "Авербандщик",
       "okz_group": "Печатники",
       "available_places": "1",
       "wage_rate": "1.000",

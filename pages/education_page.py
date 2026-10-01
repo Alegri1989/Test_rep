@@ -65,3 +65,23 @@ class EducationPage:
         self.submit_filter_btn.click(force=True)
         self.page.wait_for_load_state("load")
         self.page.wait_for_timeout(1500)
+
+    def find_region_with_results(self):
+        """Пробует области по очереди и возвращает (value, label) первой с непустой выдачей.
+
+        Некоторые области сейчас не предоставляют обучение (пустая выдача),
+        поэтому регион выбирается динамически. После вызова страница уже
+        отфильтрована по найденной области.
+        """
+        options = self.page.eval_on_selector_all(
+            "#id_region option",
+            "els => els.map(o => ({value: o.value, label: o.text.trim()}))"
+        )
+        for opt in options:
+            if opt["value"] == "0":
+                continue
+            self.region_select.select_option(opt["value"])
+            self.apply_filter_and_wait()
+            if self.region_value.count() > 0:
+                return opt["value"], opt["label"]
+        return None, None

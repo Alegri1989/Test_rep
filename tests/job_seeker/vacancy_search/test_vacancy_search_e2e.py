@@ -43,6 +43,12 @@ class TestVacancySearchFavorites:
         """
         vacancy_page = vacancy_search_page
 
+        with allure.step("Шаг 0: Очистка существующего избранного для чистого состояния"):
+            # Избранное накапливается на аккаунте между тестами (серверное состояние),
+            # поэтому сначала очищаем, чтобы тест не зависел от предыдущих прогонов.
+            if vacancy_page.count_favorited() > 0:
+                vacancy_page.clear_all_favorites()
+
         with allure.step("Добавить две вакансии в избранное"):
             added = vacancy_page.add_favorites(2)
             assert added == 2, f"Не удалось добавить 2 вакансии в избранное, добавлено: {added}"

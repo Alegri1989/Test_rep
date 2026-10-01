@@ -315,6 +315,9 @@ def test_reset_filter_clears_search(guest_page: Page, public_resume_search_page:
     with allure.step("Шаг 2: Применение фильтра по профессии"):
         public_resume_search_page.profession_input.fill("Программист")
         public_resume_search_page.search_btn_main.click()
+        # Ждём, пока поиск действительно применится (URL получит параметр),
+        # иначе клик по сбросу уйдёт во время навигации и потеряется.
+        expect(guest_page).to_have_url(re.compile(r"resume-search/\?resume_profession="), timeout=15000)
         guest_page.wait_for_load_state("domcontentloaded")
 
     with allure.step("Шаг 3: Нажатие 'Сбросить фильтр'"):

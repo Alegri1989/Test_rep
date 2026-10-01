@@ -17,8 +17,12 @@ class HelpPage:
         self.employer_tab = page.locator("#pills-profile-tab")
 
         # Кнопки "Скачать" по жестким английским уникальным частям из вашего HTML
-        self.download_seeker_guide_btn = page.locator("a[href*='rukovodstvo_job_seeker.pdf']")
-        self.download_employer_guide_btn = page.locator("a[href*='5xUt70I.pdf']")
+        self.download_seeker_guide_btn = page.locator(
+        "tr:has-text('Руководство пользователя (соискателя)') a[href$='.pdf']"
+        )
+        self.download_employer_guide_btn = page.locator(
+            "tr:has-text('Руководство пользователя (администратора нанимателя)') a[href$='.pdf']"
+        )
         self.download_vacancy_order_btn = page.locator("a[href*='V4LdVFg.pdf']")
         self.download_login_instruction_btn = page.locator(
             "tr", has_text="Инструкция по входу нанимателя"

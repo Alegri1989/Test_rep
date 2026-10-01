@@ -136,7 +136,7 @@ def test_guest_open_vacancy_detail_via_title(guest_page: Page):
         page.wait_for_load_state("load")
 
     with allure.step("ОР 1: Верификация URL карточки и заголовка вакансии"):
-        expect(page).to_have_url(re.compile(r".*/registration/employer/vacancy/\d+/detail-public/"))
+        expect(page).to_have_url(re.compile(r".*/registration/employer/vacancy/[^/]+/detail-public/"))
         expect(page.locator("h1").first).to_have_text(expected_title, timeout=5000)
 
 
@@ -172,7 +172,7 @@ def test_guest_open_vacancy_contacts(guest_page: Page):
         target_button = vacancy_page.vacancy_contacts_button.first
 
         xpath_selector = (
-            "xpath=//a[contains(@href, 'detail-public/#contact-info-anchor')]"
+            "xpath=//a[contains(@href, '#contact-info-anchor')]"
             "/ancestor::div[contains(@class, 'col-md-9') or contains(@class, 'inner-box')]"
         )
         target_card = page.locator(xpath_selector).first
@@ -184,7 +184,7 @@ def test_guest_open_vacancy_contacts(guest_page: Page):
 
     with allure.step("ОР 1: Верификация перехода на блок контактов именно выбранной вакансии"):
         expect(page).to_have_url(
-            re.compile(r".*/registration/employer/vacancy/\d+/detail-public/#contact-info-anchor")
+            re.compile(r".*/registration/employer/vacancy/[^/]+/detail-public/.*#contact-info-anchor")
         )
         expect(page.locator("h1").first).to_have_text(expected_title, timeout=5000)
 

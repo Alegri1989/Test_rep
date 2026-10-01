@@ -24,6 +24,8 @@ class VacancyCreatePage:
         self.select2_first_option = page.locator(".select2-results__option").first
         self.derivative_select = page.locator("#id_derivative_post_or_profession")
         self.qualification_select = page.locator("#id_wage_or_qualification_category")
+        # Гибкое название должности для поиска (новое обязательное поле)
+        self.displayed_profession_input = page.locator("#id_displayed_profession")
 
         # Сфера деятельности (Select2)
         self.activity_area_container = page.locator("#select2-id_activity_area-container")
