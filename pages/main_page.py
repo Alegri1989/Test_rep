@@ -7,13 +7,6 @@ class MainPage:
         self.page = page
         self.base_url = "https://gsz.gov.by"
 
-        # Ссылки главного верхнего меню
-        self.job_seeker_menu = page.get_by_role("button", name="Соискателю")
-        self.employer_menu = page.get_by_role("button", name="Нанимателю")
-        self.employment_service_menu = page.get_by_role("button", name="Органам занятости")
-        self.info_menu = page.get_by_role("button", name="Информация")
-        self.e_services_menu = page.get_by_role("button", name="Электронные сервисы")
-
         # Элементы главного блока поиска
         self.search_input = page.locator("#id_profession")
         self.search_button = page.locator("button:has(.btn-title:has-text('Найти'))")

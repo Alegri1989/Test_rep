@@ -1,4 +1,4 @@
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from helpers.network_helper import goto_with_retry
 
 
@@ -73,3 +73,12 @@ class PublicWorkPage:
         self.submit_filter_btn.click(force=True)
         self.page.wait_for_load_state("load")
         self.page.wait_for_timeout(1500)
+
+    def apply_sample_filter(self):
+        """Применяет демо-фильтр (область 'Гродненская') для проверки сброса фильтров."""
+        self.select_from_dropdown(self.region_dropdown, "Гродненская")
+        self.apply_filter_and_wait()
+
+    def verify_filter_cleared(self):
+        """Проверяет, что демо-фильтр сброшен: область вернулась к 'Любая'."""
+        expect(self.region_selected_text).to_have_text("Любая")

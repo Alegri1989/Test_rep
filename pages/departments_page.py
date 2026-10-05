@@ -1,4 +1,4 @@
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from helpers.network_helper import goto_with_retry
 
 
@@ -38,3 +38,12 @@ class DepartmentsPage:
     def apply_filter_and_wait(self):
         self.search_btn.click()
         self._page.wait_for_load_state("domcontentloaded")
+
+    def apply_sample_filter(self):
+        """Применяет демо-фильтр (регион 'Минск') для проверки сброса фильтров."""
+        self.select_region("Минск")
+        self.apply_filter_and_wait()
+
+    def verify_filter_cleared(self):
+        """Проверяет, что демо-фильтр сброшен: карточки отделов видны."""
+        expect(self.department_cards.first).to_be_visible()

@@ -1,4 +1,4 @@
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from helpers.network_helper import goto_with_retry
 
 
@@ -65,6 +65,17 @@ class EducationPage:
         self.submit_filter_btn.click(force=True)
         self.page.wait_for_load_state("load")
         self.page.wait_for_timeout(1500)
+
+    def apply_sample_filter(self):
+        """Применяет демо-фильтр (регион 'Минск') для проверки сброса фильтров."""
+        self.open_spoiler_if_hidden(self.region_filter_title, self.region_select)
+        self.region_select.select_option(label="Минск")
+        self.apply_filter_and_wait()
+
+    def verify_filter_cleared(self):
+        """Проверяет, что демо-фильтр сброшен: регион вернулся к значению 'Любой'."""
+        self.open_spoiler_if_hidden(self.region_filter_title, self.region_select)
+        expect(self.region_select).to_have_value("0")
 
     def find_region_with_results(self):
         """Пробует области по очереди и возвращает (value, label) первой с непустой выдачей.

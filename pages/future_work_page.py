@@ -1,4 +1,4 @@
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from helpers.network_helper import goto_with_retry
 
 
@@ -100,3 +100,13 @@ class FutureWorkPage:
         except Exception:
             pass
         self.page.wait_for_timeout(2000)
+
+    def apply_sample_filter(self):
+        """Применяет демо-фильтр (зарплата от 1000) для проверки сброса фильтров."""
+        self.salary_min_input.wait_for(state="visible", timeout=5000)
+        self.salary_min_input.fill("1000")
+        self.apply_filter_and_wait()
+
+    def verify_filter_cleared(self):
+        """Проверяет, что демо-фильтр сброшен: поле зарплаты очищено."""
+        expect(self.salary_min_input).to_have_value("")

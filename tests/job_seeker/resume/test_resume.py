@@ -383,3 +383,153 @@ def test_broken_object_level_authorization(auth_page: Page, app_config):
     with allure.step("Шаг 5: Посткондишн (удаление только созданного резюме)"):
         if created_resume_id:
             clear_resume_by_id(auth_page, created_resume_id)
+
+
+@pytest.mark.resume
+@allure.title("Безопасность: Запрет ИЗМЕНЕНИЯ чужого резюме (BOLA POST)")
+def test_bola_post_cannot_modify_foreign_resume(auth_page: Page):
+    """BOLA (write): попытка отправить форму обновления чужого резюме должна быть
+    отклонена сервером (403), данные чужого резюме не должны измениться.
+
+    Источник чужого ID: первое опубликованное резюме из публичного поиска.
+    """
+    base_url = "https://gsz.gov.by"
+
+    with allure.step("Шаг 1: Поиск реального чужого резюме через публичный поиск"):
+        search_url = f"{base_url}/registration/resume-search/"
+        goto_with_retry(auth_page, search_url, wait_until="load")
+        auth_page.wait_for_load_state("networkidle")
+
+        # Первое опубликованное резюме — его ID из ссылки на детальную страницу
+        first_card_link = auth_page.locator("div.inner-box.h-100 a[href*='/resume/']").first
+        first_card_link.wait_for(state="visible", timeout=10000)
+        href = first_card_link.get_attribute("href")
+        match = re.search(r"/resume/(\d+)/", href)
+        assert match, f"Не удалось извлечь ID резюме из href: {href}"
+        foreign_id = match.group(1)
+        allure.attach(foreign_id, name="Чужой ID резюме")
+
+    with allure.step(f"Шаг 2: Прямой POST на /resume/{foreign_id}/update/ с изменённой зарплатой"):
+        update_url = f"{base_url}/registration/job-seeker/resume/{foreign_id}/update/"
+        response = auth_page.request.post(
+            update_url,
+            data={"id_desired_salary": "999999"},
+            headers={"X-Requested-With": "XMLHttpRequest"},
+        )
+        allure.attach(str(response.status), name="HTTP статус POST")
+
+    with allure.step("ОР 1: Сервер отклонил изменение (403)"):
+        assert response.status == 403, (
+            f"BOLA POST: ожидался 403, получен {response.status}. "
+            f"Возможно, чужое резюме было изменено!"
+        )
+
+
+@pytest.mark.resume
+@allure.title("Безопасность: Запрет УДАЛЕНИЯ чужого резюме (BOLA DELETE)")
+def test_bola_delete_cannot_remove_foreign_resume(auth_page: Page):
+    """BOLA (delete): попытка удалить чужое резюме должна быть отклонена (403),
+    резюме должно остаться в публичном поиске.
+
+    Источник чужого ID: первое опубликованное резюме из публичного поиска.
+    """
+    base_url = "https://gsz.gov.by"
+
+    with allure.step("Шаг 1: Поиск реального чужого резюме через публичный поиск"):
+        search_url = f"{base_url}/registration/resume-search/"
+        goto_with_retry(auth_page, search_url, wait_until="load")
+        auth_page.wait_for_load_state("networkidle")
+
+        first_card_link = auth_page.locator("div.inner-box.h-100 a[href*='/resume/']").first
+        first_card_link.wait_for(state="visible", timeout=10000)
+        href = first_card_link.get_attribute("href")
+        match = re.search(r"/resume/(\d+)/", href)
+        assert match, f"Не удалось извлечь ID резюме из href: {href}"
+        foreign_id = match.group(1)
+        allure.attach(foreign_id, name="Чужой ID резюме")
+
+    with allure.step(f"Шаг 2: Прямой GET на /resume/{foreign_id}/delete"):
+        delete_url = f"{base_url}/registration/job-seeker/resume/{foreign_id}/delete"
+        response = auth_page.request.get(
+            delete_url,
+            headers={"X-Requested-With": "XMLHttpRequest"},
+        )
+        allure.attach(str(response.status), name="HTTP статус DELETE")
+
+    with allure.step("ОР 1: Сервер отклонил удаление (403)"):
+        assert response.status == 403, (
+            f"BOLA DELETE: ожидался 403, получен {response.status}. "
+            f"Возможно, чужое резюме было удалено!"
+        )
+
+    with allure.step("ОР 2: Чужое резюме по-прежнему существует в публичном поиске"):
+        goto_with_retry(auth_page, search_url, wait_until="load")
+        auth_page.wait_for_load_state("networkidle")
+        still_exists = auth_page.locator(f"a[href*='/resume/{foreign_id}/']")
+        assert still_exists.count() > 0, (
+            f"BOLA DELETE: резюме {foreign_id} исчезло из публичного поиска — возможно, было удалено!"
+        )
+
+
+@pytest.mark.validation
+@allure.epic("Резюме соискателя")
+@allure.feature("Валидация формы создания резюме")
+class TestResumeValidation:
+    """Негативные сценарии: форма создания резюме с невалидными/пустыми полями
+    не должна отправляться на сервер."""
+
+    @allure.title("Негатив: Пустая форма не отправляется (обязательные поля)")
+    def test_empty_form_blocks_submit(self, open_create_resume_page: Page):
+        """
+        Негативный сценарий (пустая форма): отправка формы создания резюме
+        без заполнения обязательных полей блокируется серверной валидацией.
+
+        Ожидаемый результат (ОР):
+        - Пользователь остаётся на странице создания (нет редиректа на список).
+        - В интерфейсе появляется сообщение об ошибке валидации.
+        """
+        page = open_create_resume_page
+        resume = ResumePage(page)
+
+        with allure.step("Шаг 1: Отправка пустой формы"):
+            resume.submit_resume_button.click()
+            page.wait_for_load_state("load")
+
+        with allure.step("ОР 1: Нет редиректа на список резюме (форма не отправлена)"):
+            assert "/resume/list/" not in page.url, (
+                f"Ошибка: пустая форма была отправлена, URL: {page.url}"
+            )
+
+        with allure.step("ОР 2: В интерфейсе появилось сообщение об ошибке валидации"):
+            error = page.locator(".invalid-feedback, .errorlist li").first
+            expect(error).to_be_visible(timeout=5000)
+
+    @allure.title("Негатив: Невалидный формат зарплаты блокирует создание резюме")
+    def test_invalid_salary_blocks_submit(self, open_create_resume_page: Page):
+        """
+        Негативный сценарий (невалидный ввод): нечисловое значение в поле
+        желаемой зарплаты не проходит серверную валидацию.
+
+        Ожидаемый результат (ОР):
+        - Пользователь остаётся на странице создания (нет редиректа на список).
+        - В интерфейсе появляется сообщение об ошибке валидации.
+        """
+        page = open_create_resume_page
+        resume = ResumePage(page)
+
+        with allure.step("Шаг 1: Ввод нечислового значения в поле зарплаты"):
+            resume.salary_input.wait_for(state="visible", timeout=5000)
+            resume.salary_input.fill("abcнецифра")
+
+        with allure.step("Шаг 2: Попытка создания резюме"):
+            resume.submit_resume_button.click()
+            page.wait_for_load_state("load")
+
+        with allure.step("ОР 1: Нет редиректа на список резюме (форма не отправлена)"):
+            assert "/resume/list/" not in page.url, (
+                f"Ошибка: невалидная форма была отправлена, URL: {page.url}"
+            )
+
+        with allure.step("ОР 2: В интерфейсе появилось сообщение об ошибке валидации"):
+            error = page.locator(".invalid-feedback, .errorlist li").first
+            expect(error).to_be_visible(timeout=5000)

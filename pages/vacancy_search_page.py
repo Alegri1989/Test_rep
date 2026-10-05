@@ -1,5 +1,5 @@
 import re
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from helpers.network_helper import goto_with_retry
 
 
@@ -89,9 +89,6 @@ class VacancySearchPage:
         self.active_page_number = page.locator("span.page-link").first
         self.page_2_link = page.locator("a.page-link[href*='page=2']").first
         self.back_arrow_btn = page.locator("a.page-link").filter(has=page.locator("span.fa-caret-left")).first
-        self.forward_arrow_btn = page.locator("a.page-link").filter(has=page.locator("span.fa-caret-right")).first
-        self.fast_backward_btn = page.locator("a.page-link").filter(has=page.locator("span.fa-backward")).first
-        self.fast_forward_btn = page.locator("a.page-link").filter(has=page.locator("span.fa-forward")).first
         self.paginate_by_select = page.locator("#paginate_by_select")
         self.sort_by_select = page.locator("#sort_by")
 
@@ -133,3 +130,21 @@ class VacancySearchPage:
         if not self.wage_rate_from_input.is_visible():
             self.wage_rate_spoiler_title.click()
             self.wage_rate_from_input.wait_for(state="visible", timeout=3000)
+
+    def apply_filter_and_wait(self):
+        """Применяет установленные фильтры нажатием кнопки 'Поиск' и ждет обновления выдачи."""
+        self.submit_filter_btn.scroll_into_view_if_needed()
+        self.page.wait_for_timeout(500)
+        self.submit_filter_btn.click(force=True)
+        self.page.wait_for_load_state("load")
+        self.page.wait_for_timeout(500)
+
+    def apply_sample_filter(self):
+        """Применяет демо-фильтр (зарплата от 1000) для проверки сброса фильтров."""
+        self.salary_min_input.wait_for(state="visible", timeout=5000)
+        self.salary_min_input.fill("1000")
+        self.apply_filter_and_wait()
+
+    def verify_filter_cleared(self):
+        """Проверяет, что демо-фильтр сброшен: поле зарплаты очищено."""
+        expect(self.salary_min_input).to_have_value("")

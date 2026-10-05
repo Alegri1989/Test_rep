@@ -149,16 +149,31 @@ class TestResumeIntegration:
                     match = re.search(r"/resume/(\d+)/", href_value)
                     created_id = match.group(1) if match else None
 
-                open_create_resume_page.wait_for_timeout(1000)
-                resume.last_resume_delete_btn.click()
+                if created_id is None:
+                    # Тест упал до создания резюме — чистить нечего. Иначе
+                    # last_resume_delete_btn удалит чужое/случайное резюме,
+                    # а not_to_be_visible пройдёт ложно (created_id=None).
+                    allure.attach(
+                        "created_id is None — резюме не создано, очистка пропущена",
+                        "Очистка",
+                    )
+                else:
+                    open_create_resume_page.wait_for_timeout(1000)
+                    resume.last_resume_delete_btn.click()
 
-                open_create_resume_page.wait_for_timeout(1000)
-                resume.popup_confirm_delete_btn.click()
-                open_create_resume_page.wait_for_load_state("load")
+                    open_create_resume_page.wait_for_timeout(1000)
+                    resume.popup_confirm_delete_btn.click()
+                    open_create_resume_page.wait_for_load_state("load")
 
-            with allure.step("ОР 3: Удаленное резюме полностью исчезло из списка"):
-                open_create_resume_page.wait_for_timeout(1000)
-                deleted_resume_link = open_create_resume_page.locator(
-                    f"a[href*='/registration/job-seeker/resume/{created_id}/update/']"
-                )
-                expect(deleted_resume_link).not_to_be_visible(timeout=5000)
+                with allure.step("ОР 3: Удаленное резюме полностью исчезло из списка"):
+                    open_create_resume_page.wait_for_timeout(1000)
+                    if created_id is not None:
+                        deleted_resume_link = open_create_resume_page.locator(
+                            f"a[href*='/registration/job-seeker/resume/{created_id}/update/']"
+                        )
+                        expect(deleted_resume_link).not_to_be_visible(timeout=5000)
+                    else:
+                        allure.attach(
+                            "Проверка исчезновения пропущена: резюме не было создано",
+                            "Очистка",
+                        )

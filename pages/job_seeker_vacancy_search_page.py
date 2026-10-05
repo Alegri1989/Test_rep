@@ -1,24 +1,30 @@
 import re
 from playwright.sync_api import Page, Locator, expect
 
+from pages.vacancy_search_page import VacancySearchPage
 
-class JobSeekerVacancySearchPage:
+
+class JobSeekerVacancySearchPage(VacancySearchPage):
+    """Страница поиска вакансий для авторизованного соискателя.
+
+    Наследует общий URL и базовые локаторы/методы VacancySearchPage
+    (один URL — один базовый page object) и добавляет только функционал
+    управления избранными вакансиями.
+    """
+
     def __init__(self, page: Page):
-        self.page = page
-        self.url = "https://gsz.gov.by/registration/vacancy-search/"
+        super().__init__(page)
 
-        # Основные элементы
+        # Элементы управления избранными
         self.favorite_btns = page.locator("button.favorite_btn")
         self.show_favorites_checkbox = page.locator("input#id_tag")
         self.show_favorites_label = page.locator("label[for='id_tag']")
         self.print_favorites_btn = page.locator("button[formaction*='print-vacancy-list']")
         self.clear_favorites_btn = page.locator("button#clear-favorites-btn")
-        self.paginate_by_select = page.locator("select#paginate_by_select")
-        self.sort_select = page.locator("select[name='sort']")
         self.vacancy_cards = page.locator(".job-block")
 
     def navigate(self):
-        """Переход на страницу и базовые проверки."""
+        """Переход на страницу и ожидание готовности списка вакансий."""
         self.page.goto(self.url)
         self.page.wait_for_selector("#id_profession", state="visible", timeout=60000)
         self.page.wait_for_load_state("networkidle")
@@ -26,26 +32,6 @@ class JobSeekerVacancySearchPage:
     def get_favorite_button(self, vacancy_index: int) -> Locator:
         """Получение кнопки избранного для конкретной вакансии."""
         return self.favorite_btns.nth(vacancy_index)
-
-    def search_vacancy(self, profession: str):
-        """Поиск вакансий по профессии."""
-        search_input = self.page.locator("#id_profession")
-        search_input.wait_for(state="visible", timeout=30000)
-        search_input.fill(profession)
-        self.page.click("button:has-text('Найти')")
-        self.page.wait_for_load_state("networkidle")
-
-    def select_region(self, region_name: str):
-        """Выбор региона через Select2."""
-        self.page.click("#select2-id_region-container")
-        self.page.fill(".select2-search__field", region_name)
-        self.page.click(f"li:has-text('{region_name}')")
-
-    def set_salary_filter(self, min_salary: str, max_salary: str = ""):
-        """Установка фильтра по зарплате."""
-        self.page.fill("#id_salary_min", min_salary)
-        if max_salary:
-            self.page.fill("#id_salary_max", max_salary)
 
     def get_favorite_state(self, vacancy_index: int) -> bool:
         """Возвращает True, если вакансия в избранном.
@@ -115,15 +101,6 @@ class JobSeekerVacancySearchPage:
             self.show_favorites_label.click()
         self.page.wait_for_load_state("networkidle")
 
-    def uncheck_show_favorites(self):
-        """Выключает фильтр «Показать только избранное» (перезагружает список)."""
-        self.show_favorites_checkbox.wait_for(state="attached", timeout=30000)
-        if not self.show_favorites_checkbox.is_checked():
-            return
-        with self.page.expect_navigation(wait_until="load"):
-            self.show_favorites_label.click()
-        self.page.wait_for_load_state("networkidle")
-
     def click_print_favorites(self, timeout=30000):
         """Инициирует печать списка избранного и возвращает ответ сервера.
 
@@ -151,12 +128,6 @@ class JobSeekerVacancySearchPage:
         self.clear_favorites_btn.click()
         self.page.wait_for_load_state("load")
         self.page.wait_for_load_state("networkidle")
-
-    def set_paginate_by(self, value: str):
-        self.paginate_by_select.select_option(value)
-
-    def set_sort_by(self, value: str):
-        self.sort_select.select_option(value)
 
     def get_vacancy_count(self) -> int:
         return self.vacancy_cards.count()

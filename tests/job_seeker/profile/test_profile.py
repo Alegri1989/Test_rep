@@ -440,171 +440,171 @@ class TestProfilePart2:
                 profile.save_changes()
                 expect(profile.email_message_input).to_have_value(default_email)
 
-    @allure.epic("Личный кабинет соискателя")
-    @allure.feature("Редактирование профиля")
-    class TestProfilePart3:
+@allure.epic("Личный кабинет соискателя")
+@allure.feature("Редактирование профиля")
+class TestProfilePart3:
 
-        @allure.title("Изменение основного телефона с проверкой маски")
-        def test_edit_main_phone(self, open_profile_page: Page, app_config):
-            """
-            Бизнес-кейс: Изменение основного номера телефона соискателя и проверка автоматического наложения маски.
+    @allure.title("Изменение основного телефона с проверкой маски")
+    def test_edit_main_phone(self, open_profile_page: Page, app_config):
+        """
+        Бизнес-кейс: Изменение основного номера телефона соискателя и проверка автоматического наложения маски.
 
-            Прекондишены:
-            1. Пользователь успешно авторизован в системе.
-            2. Открыта страница персональных данных.
+        Прекондишены:
+        1. Пользователь успешно авторизован в системе.
+        2. Открыта страница персональных данных.
 
-            Шаги:
-            1. Считать текущий номер телефона и сгенерировать ожидаемый вид тестовой маски.
-            2. Очистить инпут основного телефона и ввести сплошную строку цифр нового номера.
-            3. Нажать кнопку "Сохранить".
-            4. Проверить, что на UI номер автоматически отформатировался по маске Республики Беларусь.
-            5. Восстановить первоначальный рабочий номер телефона.
+        Шаги:
+        1. Считать текущий номер телефона и сгенерировать ожидаемый вид тестовой маски.
+        2. Очистить инпут основного телефона и ввести сплошную строку цифр нового номера.
+        3. Нажать кнопку "Сохранить".
+        4. Проверить, что на UI номер автоматически отформатировался по маске Республики Беларусь.
+        5. Восстановить первоначальный рабочий номер телефона.
 
-            Ожидаемый результат (ОР):
-            - Система успешно принимает и сохраняет новый номер телефона.
-            - Поле ввода автоматически форматирует сырые цифры в строгий шаблон +375 (XX) XXX-XX-XX.
-            """
-            profile = ProfilePage(open_profile_page)
-            test_phone = app_config["profile_test_data"]["edit_contacts"]["test_main_phone"]
+        Ожидаемый результат (ОР):
+        - Система успешно принимает и сохраняет новый номер телефона.
+        - Поле ввода автоматически форматирует сырые цифры в строгий шаблон +375 (XX) XXX-XX-XX.
+        """
+        profile = ProfilePage(open_profile_page)
+        test_phone = app_config["profile_test_data"]["edit_contacts"]["test_main_phone"]
 
-            with allure.step("Считывание текущего телефона и форматирование маски"):
-                initial_phone = profile.main_phone_input.input_value()
-                expected_test_phone = format_phone_to_mask(test_phone)
+        with allure.step("Считывание текущего телефона и форматирование маски"):
+            initial_phone = profile.main_phone_input.input_value()
+            expected_test_phone = format_phone_to_mask(test_phone)
 
-            with allure.step(f"Шаг 1: Ввод нового основного номера: {test_phone}"):
-                profile.fill_field_safely(profile.main_phone_input, test_phone)
-                profile.save_changes()
+        with allure.step(f"Шаг 1: Ввод нового основного номера: {test_phone}"):
+            profile.fill_field_safely(profile.main_phone_input, test_phone)
+            profile.save_changes()
 
-            with allure.step("ОР 1: Проверка сохранения телефона с применением маски"):
-                expect(profile.main_phone_input).to_have_value(expected_test_phone)
+        with allure.step("ОР 1: Проверка сохранения телефона с применением маски"):
+            expect(profile.main_phone_input).to_have_value(expected_test_phone)
 
-            with allure.step("Шаг 2: Восстановление первоначального номера"):
-                profile.fill_field_safely(profile.main_phone_input, initial_phone)
-                profile.save_changes()
+        with allure.step("Шаг 2: Восстановление первоначального номера"):
+            profile.fill_field_safely(profile.main_phone_input, initial_phone)
+            profile.save_changes()
 
-            with allure.step("ОР 2: Проверка возврата номера в исходное состояние"):
-                expect(profile.main_phone_input).to_have_value(initial_phone)
+        with allure.step("ОР 2: Проверка возврата номера в исходное состояние"):
+            expect(profile.main_phone_input).to_have_value(initial_phone)
 
-        @allure.title("Добавление и последующее удаление дополнительного номера телефона")
-        def test_add_and_delete_additional_phone(self, open_profile_page: Page, app_config):
-            """
-            Бизнес-кейс: Проверка работы динамического формсета дополнительных контактов в профиле соискателя.
+    @allure.title("Добавление и последующее удаление дополнительного номера телефона")
+    def test_add_and_delete_additional_phone(self, open_profile_page: Page, app_config):
+        """
+        Бизнес-кейс: Проверка работы динамического формсета дополнительных контактов в профиле соискателя.
 
-            Прекондишены:
-            1. Пользователь авторизован в системе.
-            2. Открыта страница персональных данных личного кабинета.
+        Прекондишены:
+        1. Пользователь авторизован в системе.
+        2. Открыта страница персональных данных личного кабинета.
 
-            Шаги:
-            1. Удалить дефолтную пустую строку дополнительного телефона кликом по крестику.
-            2. Нажать на кнопку "Добавить номер" для генерации чистого поля ввода.
-            3. Ввести валидный номер телефона из конфигурационных данных.
-            4. Нажать кнопку "Сохранить" для отправки изменений на бэкенд.
-            5. Проверить, что номер успешно сохранился и к нему применилась маска +375.
-            6. Нажать на крестик удаления, чтобы очистить поле, и снова сохранить форму.
+        Шаги:
+        1. Удалить дефолтную пустую строку дополнительного телефона кликом по крестику.
+        2. Нажать на кнопку "Добавить номер" для генерации чистого поля ввода.
+        3. Ввести валидный номер телефона из конфигурационных данных.
+        4. Нажать кнопку "Сохранить" для отправки изменений на бэкенд.
+        5. Проверить, что номер успешно сохранился и к нему применилась маска +375.
+        6. Нажать на крестик удаления, чтобы очистить поле, и снова сохранить форму.
 
-            Ожидаемый результат (ОР):
-            - Динамические поля корректно создаются и удаляются в DOM-дереве.
-            - Сохраненный номер отображается строго в соответствии с маской телефона Республики Беларусь.
-            - После удаления номера и сохранения формы поле очищается, данные успешно удаляются из базы.
-            """
-            profile = ProfilePage(open_profile_page)
-            contacts = app_config["profile_test_data"]["edit_contacts"]
-            mask_phone_2 = format_phone_to_mask(contacts["additional_phone_2"])
+        Ожидаемый результат (ОР):
+        - Динамические поля корректно создаются и удаляются в DOM-дереве.
+        - Сохраненный номер отображается строго в соответствии с маской телефона Республики Беларусь.
+        - После удаления номера и сохранения формы поле очищается, данные успешно удаляются из базы.
+        """
+        profile = ProfilePage(open_profile_page)
+        contacts = app_config["profile_test_data"]["edit_contacts"]
+        mask_phone_2 = format_phone_to_mask(contacts["additional_phone_2"])
 
-            with allure.step("Шаг 1: Удаление пустого дефолтного поля"):
-                profile.delete_phone_button_0.click()
-                open_profile_page.wait_for_timeout(300)
+        with allure.step("Шаг 1: Удаление пустого дефолтного поля"):
+            profile.delete_phone_button_0.click()
+            open_profile_page.wait_for_timeout(300)
 
-            with allure.step("Шаг 2: Создание чистого поля через кнопку добавления"):
-                profile.add_phone_button.click()
-                expect(profile.additional_phone_0).to_be_visible(timeout=3000)
+        with allure.step("Шаг 2: Создание чистого поля через кнопку добавления"):
+            profile.add_phone_button.click()
+            expect(profile.additional_phone_0).to_be_visible(timeout=3000)
 
-            with allure.step(f"Шаг 3: Ввод телефона {contacts['additional_phone_2']} и сохранение"):
-                profile.fill_field_safely(profile.additional_phone_0, contacts["additional_phone_2"])
-                profile.save_changes()
+        with allure.step(f"Шаг 3: Ввод телефона {contacts['additional_phone_2']} и сохранение"):
+            profile.fill_field_safely(profile.additional_phone_0, contacts["additional_phone_2"])
+            profile.save_changes()
 
-            with allure.step("ОР: Проверка успешного сохранения дополнительного телефона"):
-                expect(profile.additional_phone_0).to_have_value(mask_phone_2)
+        with allure.step("ОР: Проверка успешного сохранения дополнительного телефона"):
+            expect(profile.additional_phone_0).to_have_value(mask_phone_2)
 
-            with allure.step("Шаг 4: Возврат формы в исходный вид (удаление номера крестиком)"):
-                profile.delete_phone_button_0.click()
-                profile.save_changes()
+        with allure.step("Шаг 4: Возврат формы в исходный вид (удаление номера крестиком)"):
+            profile.delete_phone_button_0.click()
+            profile.save_changes()
 
-            with allure.step("Проверка полного очищения поля"):
-                expect(profile.additional_phone_0).to_have_value("")
+        with allure.step("Проверка полного очищения поля"):
+            expect(profile.additional_phone_0).to_have_value("")
 
-        @allure.title("Негативный тест: Попытка изменения телефона на уже занятый")
-        def test_edit_phone_already_taken_negative(self, open_profile_page: Page, app_config):
-            """
-            Бизнес-кейс: Негативный сценарий валидации уникальности телефона при попытке сохранения уже зарегистрированного номера.
+    @allure.title("Негативный тест: Попытка изменения телефона на уже занятый")
+    def test_edit_phone_already_taken_negative(self, open_profile_page: Page, app_config):
+        """
+        Бизнес-кейс: Негативный сценарий валидации уникальности телефона при попытке сохранения уже зарегистрированного номера.
 
-            Прекондишены:
-            1. Пользователь успешно авторизован в системе.
-            2. Открыта страница персональных данных.
+        Прекондишены:
+        1. Пользователь успешно авторизован в системе.
+        2. Открыта страница персональных данных.
 
-            Шаги:
-            1. Фиксировать текущий рабочий номер телефона профиля.
-            2. Ввести в инпут основного телефона номер, который гарантированно привязан к другому личному кабинету.
-            3. Нажать кнопку "Сохранить" и дождаться ответа бэкенда.
-            4. Зафиксировать появление красного алерта и развернутого текста ошибки под полем.
-            5. Восстановить исходный телефон соискателя для стабилизации аккаунта.
+        Шаги:
+        1. Фиксировать текущий рабочий номер телефона профиля.
+        2. Ввести в инпут основного телефона номер, который гарантированно привязан к другому личному кабинету.
+        3. Нажать кнопку "Сохранить" и дождаться ответа бэкенда.
+        4. Зафиксировать появление красного алерта и развернутого текста ошибки под полем.
+        5. Восстановить исходный телефон соискателя для стабилизации аккаунта.
 
-            Ожидаемый результат (ОР):
-            - Система блокирует дублирование номеров телефонов в базе данных.
-            - Под инпутом отображается строгий валидационный текст о невозможности регистрации.
-            """
-            profile = ProfilePage(open_profile_page)
-            taken_phone = app_config["profile_test_data"]["negative_contacts"]["already_taken_phone"]
-            expected_error = "На указанный номер телефона уже зарегистрирован другой личный кабинет. Введите другой номер или войдите в существующий кабинет."
+        Ожидаемый результат (ОР):
+        - Система блокирует дублирование номеров телефонов в базе данных.
+        - Под инпутом отображается строгий валидационный текст о невозможности регистрации.
+        """
+        profile = ProfilePage(open_profile_page)
+        taken_phone = app_config["profile_test_data"]["negative_contacts"]["already_taken_phone"]
+        expected_error = "На указанный номер телефона уже зарегистрирован другой личный кабинет. Введите другой номер или войдите в существующий кабинет."
 
-            with allure.step("Фиксация текущего телефона профиля перед тестом"):
-                initial_phone = profile.main_phone_input.input_value()
+        with allure.step("Фиксация текущего телефона профиля перед тестом"):
+            initial_phone = profile.main_phone_input.input_value()
 
-            with allure.step(f"Шаг 1: Ввод занятого телефона: {taken_phone}"):
-                profile.fill_field_safely(profile.main_phone_input, taken_phone)
-                profile.save_changes()
+        with allure.step(f"Шаг 1: Ввод занятого телефона: {taken_phone}"):
+            profile.fill_field_safely(profile.main_phone_input, taken_phone)
+            profile.save_changes()
 
-            with allure.step("ОР: Отображение красной плашки и развернутого текста ошибки под полем"):
-                expect(profile.error_alert).to_be_visible()
-                expect(profile.phone_error_message).to_have_text(expected_error)
+        with allure.step("ОР: Отображение красной плашки и развернутого текста ошибки под полем"):
+            expect(profile.error_alert).to_be_visible()
+            expect(profile.phone_error_message).to_have_text(expected_error)
 
-            with allure.step("Шаг 2: Восстановление исходного телефона"):
-                profile.fill_field_safely(profile.main_phone_input, initial_phone)
-                profile.save_changes()
+        with allure.step("Шаг 2: Восстановление исходного телефона"):
+            profile.fill_field_safely(profile.main_phone_input, initial_phone)
+            profile.save_changes()
 
-            with allure.step("Проверка успешного восстановления номера"):
-                expect(profile.main_phone_input).to_have_value(initial_phone)
+        with allure.step("Проверка успешного восстановления номера"):
+            expect(profile.main_phone_input).to_have_value(initial_phone)
 
-        @allure.title("Проверка кликабельности чек-бокса скрытия ФИО")
-        def test_click_privacy_checkbox(self, open_profile_page: Page):
-            """
-            Бизнес-кейс: Проверка работы триггера приватности персональных данных соискателя.
+    @allure.title("Проверка кликабельности чек-бокса скрытия ФИО")
+    def test_click_privacy_checkbox(self, open_profile_page: Page):
+        """
+        Бизнес-кейс: Проверка работы триггера приватности персональных данных соискателя.
 
-            Прекондишены:
-            1. Пользователь успешно авторизован в системе.
-            2. Открыта страница персональных данных.
+        Прекондишены:
+        1. Пользователь успешно авторизован в системе.
+        2. Открыта страница персональных данных.
 
-            Шаги:
-            1. Нажать на чекбокс "Скрыть ФИО" через генерацию JS-события dispatch_event.
-            2. Сохранить изменения на сервере.
-            3. Верифицировать статус активации чекбокса через ассерт .to_be_checked().
-            4. Повторно кликнуть по чекбоксу для деактивации режима скрытия и сохранить форму.
+        Шаги:
+        1. Нажать на чекбокс "Скрыть ФИО" через генерацию JS-события dispatch_event.
+        2. Сохранить изменения на сервере.
+        3. Верифицировать статус активации чекбокса через ассерт .to_be_checked().
+        4. Повторно кликнуть по чекбоксу для деактивации режима скрытия и сохранить форму.
 
-            Ожидаемый результат (ОР):
-            - Чекбокс успешно переключает свои состояния и фиксирует флаг приватности на бэкенде.
-            """
-            profile = ProfilePage(open_profile_page)
+        Ожидаемый результат (ОР):
+        - Чекбокс успешно переключает свои состояния и фиксирует флаг приватности на бэкенде.
+        """
+        profile = ProfilePage(open_profile_page)
 
-            with allure.step("Шаг 1: Активация чек-бокса 'Скрыть ФИО'"):
-                profile.privacy_checkbox.dispatch_event("click")
-                profile.save_changes()
+        with allure.step("Шаг 1: Активация чек-бокса 'Скрыть ФИО'"):
+            profile.privacy_checkbox.dispatch_event("click")
+            profile.save_changes()
 
-            with allure.step("ОР 1: Чек-бокс успешно активен"):
-                expect(profile.privacy_checkbox).to_be_checked()
+        with allure.step("ОР 1: Чек-бокс успешно активен"):
+            expect(profile.privacy_checkbox).to_be_checked()
 
-            with allure.step("Шаг 2: Деактивация чек-бокса (возврат в исходное состояние)"):
-                profile.privacy_checkbox.dispatch_event("click")
-                profile.save_changes()
+        with allure.step("Шаг 2: Деактивация чек-бокса (возврат в исходное состояние)"):
+            profile.privacy_checkbox.dispatch_event("click")
+            profile.save_changes()
 
-            with allure.step("ОР 2: Чек-бокс успешно снят"):
-                expect(profile.privacy_checkbox).not_to_be_checked()
+        with allure.step("ОР 2: Чек-бокс успешно снят"):
+            expect(profile.privacy_checkbox).not_to_be_checked()

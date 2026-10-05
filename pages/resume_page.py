@@ -189,41 +189,6 @@ class ResumePage:
         self.modal_publish_submit.wait_for(state="hidden", timeout=5000)
         self.page.wait_for_load_state("load")
 
-    def create_full_resume_draft(self):
-        """Заполняет все поля формы и создает черновик резюме."""
-        self.profession_container.wait_for(state="visible", timeout=5000)
-        self.profession_container.click()
-        self.select2_search_input.press_sequentially("Авербандщик", delay=100)
-        self.page.wait_for_timeout(500)
-        self.select2_first_option.click()
-
-        self.salary_input.fill("2000")
-        self.employment_nature_dropdown.select_option(label="Постоянная")
-        self.work_mode_dropdown.select_option(label="Одна смена")
-
-        self.add_experience_button.click()
-        self.exp_org_input.fill("Тесторг")
-        self.exp_profession_input.fill("Тестдолжность")
-        self.exp_duties_input.fill("Тестобязанности")
-        self.exp_years_input.fill("2")
-        self.exp_months_input.fill("5")
-
-        self.add_education_button.click()
-        self.edu_name_input.fill("Тестовый ВУЗ")
-        self.edu_specialty_input.fill("Тест-Специализация")
-        self.edu_ending_input.fill("2020")
-
-        self.language_dropdown.select_option(label="Английский", force=True)
-        self.lang_level_dropdown.select_option(label="средний", force=True)
-
-        self.skills_container.click()
-        self.skills_search_input.press_sequentially("Тайм-менеджмент", delay=100)
-        self.page.wait_for_timeout(500)
-        self.select2_first_option.click()
-
-        self.submit_resume_button.click()
-        self.page.wait_for_timeout(3000)
-
 
 
 

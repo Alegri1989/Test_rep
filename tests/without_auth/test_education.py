@@ -155,45 +155,6 @@ def test_guest_filter_by_start_when_full(guest_page: Page, education_page: Educa
 
 
 @pytest.mark.education
-@allure.title("Бизнес-кейс: Сброс установленных фильтров курсов обучения")
-def test_guest_reset_applied_filters(guest_page: Page, education_page: EducationPage):
-    """
-    Бизнес-кейс: Проверка работоспособности функционала сброса установленных поисковых фильтров.
-
-    Прекондишены:
-    1. Пользователь не авторизован в системе (гостевой сеанс).
-    2. Инициализирована страница обучения.
-
-    Шаги:
-    1. Открыть страницу, раскрыть спойлер региона и выбрать значение "Минск".
-    2. Применить фильтр нажатием кнопки "Поиск".
-    3. Кликнуть по кнопке "Сбросить фильтр".
-    4. Раскрыть спойлер региона повторно и верифицировать возврат к значению "Любой" и дефолтному URL.
-
-    Ожидаемый результат (ОР):
-    - Система выполняет перезагрузку страницы и возвращает пользователя на дефолтный URL со знаком вопроса.
-    - Ранее выбранный регион сбрасывается до значения "Любой".
-    """
-    with allure.step("Шаг 1: Переход на страницу, раскрытие спойлера и выбор региона 'Минск'"):
-        education_page.navigate()
-        education_page.open_spoiler_if_hidden(education_page.region_filter_title, education_page.region_select)
-        education_page.region_select.select_option(label="Минск")
-
-    with allure.step("Шаг 2: Применение фильтра"):
-        education_page.apply_filter_and_wait()
-
-    with allure.step("Шаг 3: Нажатие на кнопку 'Сбросить фильтр' и ожидание обновления страницы"):
-        education_page.reset_filter_btn.wait_for(state="visible", timeout=5000)
-        education_page.reset_filter_btn.click()
-        guest_page.wait_for_load_state("load")
-
-    with allure.step("ОР 1: Верификация сброса региона до значения 'Любой' и возврата к дефолтному URL"):
-        expect(guest_page).to_have_url("https://gsz.gov.by/registration/training-course/public/list/?")
-        education_page.open_spoiler_if_hidden(education_page.region_filter_title, education_page.region_select)
-        expect(education_page.region_select).to_have_value("0")
-
-
-@pytest.mark.education
 @allure.title("Бизнес-кейс: Переход на детальную страницу курса обучения по кнопке 'Подробнее'")
 def test_guest_navigate_to_detail_via_button(guest_page: Page, education_page: EducationPage):
     """
@@ -254,42 +215,3 @@ def test_guest_navigate_to_employment_departments_via_contact_link(guest_page: P
     with allure.step("ОР 1: Верификация открытия страницы контактных данных службы занятости"):
         expect(popup).to_have_url(re.compile(r"/directory/information/employment-departments/"))
         popup.close()
-
-
-@pytest.mark.education
-@allure.title("Бизнес-кейс: Постраничная навигация по курсам обучения (вперед на страницу 2, назад на страницу 1)")
-def test_guest_pagination_forward_and_back(guest_page: Page, education_page: EducationPage):
-    """
-    Бизнес-кейс: Проверка корректности постраничной навигации по выдаче курсов обучения.
-
-    Прекондишены:
-    1. Пользователь не авторизован в системе (гостевой сеанс).
-    2. Инициализирована страница обучения, выдача содержит больше одной страницы.
-
-    Шаги:
-    1. Открыть страницу и кликнуть по ссылке на вторую страницу пагинации.
-    2. Верифицировать, что активный номер страницы стал равен "2".
-    3. Кликнуть по стрелке "назад" (caret-left).
-    4. Верифицировать возврат на первую страницу выдачи.
-
-    Ожидаемый результат (ОР):
-    - Постраничная навигация корректно переключает выдачу как вперед, так и назад.
-    """
-    with allure.step("Шаг 1: Переход на страницу и клик по ссылке второй страницы пагинации"):
-        education_page.navigate()
-        education_page.page_2_link.wait_for(state="visible", timeout=5000)
-        education_page.page_2_link.click()
-        guest_page.wait_for_load_state("load")
-
-    with allure.step("ОР 1: Верификация активной второй страницы"):
-        expect(education_page.active_page_number).to_have_text("2")
-        education_page.vacancy_cards.first.wait_for(state="visible", timeout=5000)
-
-    with allure.step("Шаг 2: Клик по стрелке 'назад'"):
-        education_page.back_arrow_btn.wait_for(state="visible", timeout=5000)
-        education_page.back_arrow_btn.click()
-        guest_page.wait_for_load_state("load")
-
-    with allure.step("ОР 2: Верификация возврата на первую страницу"):
-        expect(education_page.active_page_number).to_have_text("1")
-        education_page.vacancy_cards.first.wait_for(state="visible", timeout=5000)

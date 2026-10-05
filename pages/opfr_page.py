@@ -1,4 +1,4 @@
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from helpers.network_helper import goto_with_retry
 
 
@@ -47,3 +47,13 @@ class OpfrPage:
         self.page.wait_for_timeout(500)
         self.submit_filter_btn.click()
         self.page.wait_for_load_state("load")
+
+    def apply_sample_filter(self):
+        """Применяет демо-фильтр (наименование 'Скидельский') для проверки сброса фильтров."""
+        self.name_filter_input.wait_for(state="visible", timeout=5000)
+        self.name_filter_input.fill("Скидельский")
+        self.apply_filter_and_wait()
+
+    def verify_filter_cleared(self):
+        """Проверяет, что демо-фильтр сброшен: поле наименования очищено."""
+        expect(self.name_filter_input).to_have_value("")

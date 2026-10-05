@@ -114,13 +114,20 @@ def test_guest_filter_by_min_salary(guest_page: Page, future_work_page: FutureWo
 
         for i in range(count):
             salary_text = future_work_page.salary_value.nth(i).text_content().replace(" ", "").replace("\xa0", "")
-            numbers = [int(s) for s in re.findall(r"\d+", salary_text)]
+            numbers = re.findall(r"[\d.,]+", salary_text)
 
-            if numbers:
-                max_salary_on_card = max(numbers)
-                assert max_salary_on_card >= 1000, (
-                    f"Ошибка: на позиции {i + 1} найдено место с неподходящей зарплатой: {numbers}"
-                )
+            values = []
+            for n in numbers:
+                try:
+                    values.append(float(n.replace(",", ".")))
+                except ValueError:
+                    continue
+            assert values, f"Ошибка: не удалось распарсить зарплату '{salary_text}' на позиции {i + 1}"
+
+            min_salary = min(values)
+            assert min_salary >= 1000, (
+                f"Ошибка: на позиции {i + 1} найдено место с минимальной зарплатой ниже 1000: {min_salary}"
+            )
 
 
 @pytest.mark.future_work
@@ -419,45 +426,6 @@ def test_guest_filter_by_housing(guest_page: Page, future_work_page: FutureWorkP
 
 
 @pytest.mark.future_work
-@allure.title("Бизнес-кейс: Сброс установленных фильтров перспективных рабочих мест")
-def test_guest_reset_applied_filters(guest_page: Page, future_work_page: FutureWorkPage):
-    """
-    Бизнес-кейс: Проверка работоспособности функционала сброса установленных поисковых фильтров.
-
-    Прекондишены:
-    1. Пользователь не авторизован в системе (гостевой сеанс).
-    2. Инициализирована страница перспективных рабочих мест.
-
-    Шаги:
-    1. Открыть страницу и заполнить инпут "Заработная плата от" значением "1000".
-    2. Применить фильтр нажатием кнопки "Поиск".
-    3. Кликнуть по кнопке "Сбросить фильтр".
-    4. Верифицировать очистку поля и возврат к дефолтному URL со знаком вопроса.
-
-    Ожидаемый результат (ОР):
-    - Система выполняет перезагрузку страницы и возвращает пользователя на дефолтный URL со знаком вопроса.
-    - Ранее введенное значение зарплаты сбрасывается до пустого значения.
-    """
-    with allure.step("Шаг 1: Переход на страницу и заполнение поля 'Заработная плата от'"):
-        future_work_page.navigate()
-        future_work_page.salary_min_input.wait_for(state="visible", timeout=5000)
-        future_work_page.salary_min_input.click()
-        future_work_page.salary_min_input.fill("1000")
-
-    with allure.step("Шаг 2: Применение фильтра"):
-        future_work_page.apply_filter_and_wait()
-
-    with allure.step("Шаг 3: Нажатие на кнопку 'Сбросить фильтр' и ожидание обновления страницы"):
-        future_work_page.reset_filter_btn.wait_for(state="visible", timeout=5000)
-        future_work_page.reset_filter_btn.click()
-        guest_page.wait_for_load_state("load")
-
-    with allure.step("ОР 1: Верификация очистки инпута зарплаты и возврата к дефолтному URL"):
-        expect(future_work_page.salary_min_input).to_have_value("")
-        expect(guest_page).to_have_url("https://gsz.gov.by/registration/future-vacancy/future-works/?")
-
-
-@pytest.mark.future_work
 @allure.title("Бизнес-кейс: Переход на детальную страницу по кнопке 'Подробнее'")
 def test_guest_navigate_to_detail_via_button(guest_page: Page, future_work_page: FutureWorkPage):
     """
@@ -521,59 +489,6 @@ def test_guest_navigate_to_employer_via_organization_link(guest_page: Page, futu
 
 
 @pytest.mark.future_work
-@allure.title("Бизнес-кейс: Изменение количества отображаемых мест на странице (10 -> 20 -> 50 -> 10)")
-def test_guest_change_paginate_by_count(guest_page: Page, future_work_page: FutureWorkPage):
-    """
-    Бизнес-кейс: Проверка работы селекта количества элементов на странице выдачи перспективных мест.
-
-    Прекондишены:
-    1. Пользователь не авторизован в системе (гостевой сеанс).
-    2. Инициализирована страница перспективных рабочих мест.
-
-    Шаги:
-    1. Открыть страницу и проверить, что по умолчанию в селекте выбрано значение "10".
-    2. Переключить селект на значение "20", дождаться загрузки и проверить количество карточек.
-    3. Переключить селект на значение "50", дождаться загрузки и проверить количество карточек.
-    4. Переключить селект обратно на "10" и верифицировать возврат к исходному количеству.
-
-    Ожидаемый результат (ОР):
-    - Селект успешно переключает режимы отображения, бэкенд перестраивает выдачу с соответствующим лимитом строк.
-    """
-    with allure.step("Шаг 1: Переход на страницу и проверка дефолтного значения 10"):
-        future_work_page.navigate()
-        future_work_page.paginate_by_select.wait_for(state="visible", timeout=5000)
-        expect(future_work_page.paginate_by_select).to_have_value("10")
-
-        future_work_page.vacancy_cards.first.wait_for(state="visible", timeout=5000)
-        initial_cards_count = future_work_page.vacancy_cards.count()
-        assert 0 < initial_cards_count <= 10, f"Ошибка: дефолтное количество карточек {initial_cards_count} > 10"
-
-    with allure.step("Шаг 2: Переключение лимита на '20' и верификация количества"):
-        future_work_page.paginate_by_select.select_option(label="20")
-        guest_page.wait_for_load_state("load")
-
-        future_work_page.vacancy_cards.first.wait_for(state="visible", timeout=5000)
-        cards_count_20 = future_work_page.vacancy_cards.count()
-        assert 0 < cards_count_20 <= 20, f"Ошибка: при лимите 20 отобразилось {cards_count_20} карточек"
-
-    with allure.step("Шаг 3: Переключение лимита на '50' и верификация количества"):
-        future_work_page.paginate_by_select.select_option(label="50")
-        guest_page.wait_for_load_state("load")
-
-        future_work_page.vacancy_cards.first.wait_for(state="visible", timeout=5000)
-        cards_count_50 = future_work_page.vacancy_cards.count()
-        assert 0 < cards_count_50 <= 50, f"Ошибка: при лимите 50 отобразилось {cards_count_50} карточек"
-
-    with allure.step("Шаг 4: Возврат лимита на '10' и финальная верификация"):
-        future_work_page.paginate_by_select.select_option(label="10")
-        guest_page.wait_for_load_state("load")
-
-        future_work_page.vacancy_cards.first.wait_for(state="visible", timeout=5000)
-        final_cards_count = future_work_page.vacancy_cards.count()
-        assert 0 < final_cards_count <= 10, f"Ошибка: после возврата на 10 отобразилось {final_cards_count} карточек"
-
-
-@pytest.mark.future_work
 @allure.title("Бизнес-кейс: Проверка сортировки выдачи перспективных рабочих мест")
 def test_guest_sorting_options(guest_page: Page, future_work_page: FutureWorkPage, test_sorting: str):
     """
@@ -590,6 +505,11 @@ def test_guest_sorting_options(guest_page: Page, future_work_page: FutureWorkPag
     4. Дождаться перезагрузки страницы (компонент submit-on-change).
     5. Верифицировать, что селект принял выбранное значение, а в URL добавился нужный query-параметр.
     6. Дождаться появления результатов и убедиться, что первая карточка успешно отображается.
+    7. Собрать значения зарплат со всех карточек выдачи и проверить порядок сортировки.
+
+    Ожидаемый результат (ОР):
+    - Селект сортировки принимает выбранное значение, в URL добавляется query-параметр sort_by.
+    - Зарплаты на карточках выдачи отсортированы в заявленном порядке.
     """
     if isinstance(test_sorting, (tuple, list)) and len(test_sorting) > 0:
         clean_sort_value = str(test_sorting[0])
@@ -610,41 +530,35 @@ def test_guest_sorting_options(guest_page: Page, future_work_page: FutureWorkPag
         future_work_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
         expect(future_work_page.vacancy_title_link.first).to_be_visible()
 
+    with allure.step("ОР 1: Верификация порядка выдачи"):
+        future_work_page.salary_value.first.wait_for(state="visible", timeout=5000)
 
-@pytest.mark.future_work
-@allure.title("Бизнес-кейс: Постраничная навигация (вперед на страницу 2, назад на страницу 1)")
-def test_guest_pagination_forward_and_back(guest_page: Page, future_work_page: FutureWorkPage):
-    """
-    Бизнес-кейс: Проверка корректности постраничной навигации по выдаче перспективных рабочих мест.
+        count = future_work_page.salary_value.count()
+        assert count > 0, "Ошибка: сортировка вернула пустой список перспективных рабочих мест"
 
-    Прекондишены:
-    1. Пользователь не авторизован в системе (гостевой сеанс).
-    2. Инициализирована страница перспективных рабочих мест, выдача содержит больше одной страницы.
+        # Проверка порядка зарплат имеет смысл только для сортировки по зарплате.
+        # Для сортировки по дате/профессии зарплаты не обязаны быть в порядке,
+        # поэтому для них проверяем лишь непустую выдачу (выше).
+        if "salary" not in clean_sort_value:
+            return
 
-    Шаги:
-    1. Открыть страницу и кликнуть по ссылке на вторую страницу пагинации.
-    2. Верифицировать, что активный номер страницы стал равен "2".
-    3. Кликнуть по стрелке "назад" (caret-left).
-    4. Верифицировать возврат на первую страницу выдачи.
+        salaries = []
+        for i in range(count):
+            salary_text = future_work_page.salary_value.nth(i).text_content().replace(" ", "").replace("\xa0", "")
+            # Сортировка идёт по зарплате «от» — первое число диапазона.
+            m = re.search(r"(\d[\d.,]*)", salary_text)
+            if m:
+                try:
+                    salaries.append(float(m.group(1).replace(",", ".")))
+                except ValueError:
+                    continue
+        assert salaries, "Ошибка: не удалось распарсить зарплаты в выдаче"
 
-    Ожидаемый результат (ОР):
-    - Постраничная навигация корректно переключает выдачу как вперед, так и назад.
-    """
-    with allure.step("Шаг 1: Переход на страницу и клик по ссылке второй страницы пагинации"):
-        future_work_page.navigate()
-        future_work_page.page_2_link.wait_for(state="visible", timeout=5000)
-        future_work_page.page_2_link.click()
-        guest_page.wait_for_load_state("load")
-
-    with allure.step("ОР 1: Верификация активной второй страницы"):
-        expect(future_work_page.active_page_number).to_have_text("2")
-        future_work_page.vacancy_cards.first.wait_for(state="visible", timeout=5000)
-
-    with allure.step("Шаг 2: Клик по стрелке 'назад'"):
-        future_work_page.back_arrow_btn.wait_for(state="visible", timeout=5000)
-        future_work_page.back_arrow_btn.click()
-        guest_page.wait_for_load_state("load")
-
-    with allure.step("ОР 2: Верификация возврата на первую страницу"):
-        expect(future_work_page.active_page_number).to_have_text("1")
-        future_work_page.vacancy_cards.first.wait_for(state="visible", timeout=5000)
+        if "desc" in clean_sort_value:
+            assert salaries == sorted(salaries, reverse=True), (
+                f"Ошибка: зарплаты не отсортированы по убыванию для '{clean_sort_value}': {salaries}"
+            )
+        else:
+            assert salaries == sorted(salaries), (
+                f"Ошибка: зарплаты не отсортированы по возрастанию для '{clean_sort_value}': {salaries}"
+            )

@@ -65,41 +65,6 @@ def test_filter_by_region_updates_url(guest_page: Page, departments_page: Depart
         expect(departments_page.department_cards.first).to_be_visible()
 
 
-@pytest.mark.departments
-@allure.epic("Справочник отделов занятости")
-@allure.feature("Сброс фильтра")
-@allure.title("Бизнес-кейс: Кнопка 'Сбросить фильтр' возвращает к полному списку")
-def test_reset_filter_clears_params(guest_page: Page, departments_page: DepartmentsPage):
-    """
-    Бизнес-кейс: После применения фильтра по региону кнопка "Сбросить фильтр"
-    возвращает URL в исходное состояние и показывает полный список отделов.
-
-    Шаги:
-    1. Открыть страницу.
-    2. Применить фильтр по региону.
-    3. Нажать "Сбросить фильтр".
-
-    ОР:
-    - URL: /directory/information/employment-departments/?
-    - Карточки видны.
-    """
-    with allure.step("Шаг 1: Переход на страницу"):
-        departments_page.navigate()
-
-    with allure.step("Шаг 2: Применение фильтра по региону 'Минск'"):
-        departments_page.select_region("Минск")
-        departments_page.apply_filter_and_wait()
-
-    with allure.step("Шаг 3: Сброс фильтра"):
-        departments_page.reset_filter_btn.click()
-        guest_page.wait_for_load_state("domcontentloaded")
-
-    with allure.step("ОР: URL сброшен, карточки видны"):
-        expect(guest_page).to_have_url(
-            "https://gsz.gov.by/directory/information/employment-departments/?"
-        )
-        expect(departments_page.department_cards.first).to_be_visible()
-
 
 @pytest.mark.departments
 @allure.epic("Справочник отделов занятости")
@@ -154,7 +119,7 @@ def test_external_site_button_opens_in_new_tab(departments_page: DepartmentsPage
         first_site_btn = departments_page.site_buttons.first
         expect(first_site_btn).to_be_visible()
         expect(first_site_btn).to_have_attribute("target", "_blank")
-        expect(first_site_btn).to_have_attribute("href", re.compile(r"^https?://"))
+        expect(first_site_btn).to_have_attribute("href", re.compile(r"^https?://(?!.*gsz\.gov\.by)"))
 
 
 @pytest.mark.departments

@@ -1,4 +1,4 @@
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from helpers.network_helper import goto_with_retry
 
 
@@ -74,3 +74,18 @@ class PublicResumeSearchPage:
     def apply_filter_and_wait(self):
         self.submit_filter_btn.click()
         self._page.wait_for_load_state("domcontentloaded")
+
+    def apply_sample_filter(self):
+        """Применяет демо-фильтр (профессия 'Программист') для проверки сброса фильтров."""
+        self.profession_input.fill("Программист")
+        self.search_btn_main.click()
+        self._page.wait_for_load_state("domcontentloaded")
+        # Ждём, пока фильтр действительно применится (URL получит параметр),
+        # иначе клик по сбросу уйдёт во время навигации и потеряется.
+        from playwright.sync_api import expect
+        from re import compile as re_compile
+        expect(self._page).to_have_url(re_compile(r"resume-search/\?resume_profession="), timeout=15000)
+
+    def verify_filter_cleared(self):
+        """Проверяет, что демо-фильтр сброшен: карточки резюме видны."""
+        expect(self.resume_cards.first).to_be_visible()

@@ -44,8 +44,8 @@ def test_guest_search_by_profession(guest_page: Page):
         from urllib.parse import unquote
 
         current_url_decoded = unquote(page.url)
-        expected_url = "https://gsz.gov.by"
-        assert expected_url in current_url_decoded
+        assert "gsz.gov.by" in current_url_decoded, "Ошибка: не произошло переход на gsz.gov.by"
+        assert "profession=" in current_url_decoded, "Ошибка: в URL отсутствует параметр profession"
 
 
 @allure.title("Бизнес-кейс: Поиск вакансий по частичному совпадению слова 'тест'")

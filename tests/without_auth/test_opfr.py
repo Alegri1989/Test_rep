@@ -166,42 +166,6 @@ def test_guest_filter_by_region(guest_page: Page, opfr_page: OpfrPage):
         expect(guest_page).to_have_url(re.compile(r"region="))
 
 
-@pytest.mark.opfr
-@allure.title("Бизнес-кейс: Сброс установленных фильтров организаций")
-def test_guest_reset_applied_filters(guest_page: Page, opfr_page: OpfrPage):
-    """
-    Бизнес-кейс: Проверка работоспособности функционала сброса установленных поисковых фильтров.
-
-    Прекондишены:
-    1. Пользователь не авторизован в системе (гостевой сеанс).
-    2. Инициализирована страница ОПФР-организаций.
-
-    Шаги:
-    1. Перейти на страницу, ввести наименование "Скидельский" и применить фильтр.
-    2. Кликнуть по кнопке "Сбросить фильтр".
-    3. Верифицировать возврат к дефолтному URL и очистку поля наименования.
-
-    Ожидаемый результат (ОР):
-    - Страница перезагружается на дефолтный URL со знаком вопроса.
-    - Поле наименования организации очищено.
-    """
-    with allure.step("Шаг 1: Переход на страницу, ввод наименования и применение фильтра"):
-        opfr_page.navigate()
-        opfr_page.name_filter_input.wait_for(state="visible", timeout=5000)
-        opfr_page.name_filter_input.fill("Скидельский")
-        opfr_page.apply_filter_and_wait()
-
-    with allure.step("Шаг 2: Нажатие на кнопку 'Сбросить фильтр' и ожидание обновления страницы"):
-        opfr_page.reset_filter_btn.wait_for(state="visible", timeout=5000)
-        opfr_page.reset_filter_btn.click()
-        guest_page.wait_for_load_state("load")
-
-    with allure.step("ОР 1: Верификация возврата к дефолтному URL"):
-        expect(guest_page).to_have_url("https://gsz.gov.by/registration/opfr_organisations/public-list/?")
-
-    with allure.step("ОР 2: Верификация очистки поля наименования организации"):
-        expect(opfr_page.name_filter_input).to_have_value("")
-
 
 @pytest.mark.opfr
 @allure.title("Бизнес-кейс: Переход на детальную страницу организации по клику на её наименование")

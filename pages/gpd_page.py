@@ -1,4 +1,4 @@
-from playwright.sync_api import Page
+from playwright.sync_api import Page, expect
 from helpers.network_helper import goto_with_retry
 
 
@@ -78,3 +78,13 @@ class GpdPage:
         self.submit_filter_btn.click(force=True)
         self.page.wait_for_load_state("load")
         self.page.wait_for_timeout(1500)
+
+    def apply_sample_filter(self):
+        """Применяет демо-фильтр (зарплата от 500) для проверки сброса фильтров."""
+        self.salary_min_input.wait_for(state="visible", timeout=5000)
+        self.salary_min_input.fill("500")
+        self.apply_filter_and_wait()
+
+    def verify_filter_cleared(self):
+        """Проверяет, что демо-фильтр сброшен: поле зарплаты очищено."""
+        expect(self.salary_min_input).to_have_value("")

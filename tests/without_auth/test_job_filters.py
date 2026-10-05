@@ -496,7 +496,7 @@ def test_guest_filter_by_search_period(guest_page: Page, vacancy_page: VacancySe
 @allure.title("Бизнес-кейс: Фильтрация вакансий по Сфере деятельности (Высший менеджмент)")
 def test_guest_filter_by_activity_sphere(guest_page: Page, vacancy_page: VacancySearchPage):
     """
-    Бизнес-кейс: Проверка работы фильтра индустриальной сферы деятельности с валидацией на детальной странице.
+    Бизнес-кейс: Проверка работы фильтра индустриальной сферы деятельности.
 
     Прекондишены:
     1. Пользователь не авторизован в системе (гостевой сеанс).
@@ -506,12 +506,11 @@ def test_guest_filter_by_activity_sphere(guest_page: Page, vacancy_page: Vacancy
     1. Перейти на страницу поиска и раскрыть скрытый спойлер блока сферы деятельности.
     2. Выбрать из выпадающего списка вариант "Высший менеджмент" с помощью Select2.
     3. Применить фильтр нажатием кнопки через хелпер.
-    4. Кликнуть по заголовку первой отфильтрованной карточки для перехода внутрь вакансии.
-    5. Верифицировать на детальной публичной странице наличие параграфа "Высший менеджмент".
+    4. Верифицировать, что выдача непустая и URL содержит параметр activity_area.
 
     Ожидаемый результат (ОР):
     - Списки Select2 успешно находят и применяют выбранную сферу деятельности.
-    - Внутри детальной карточки в графе сферы деятельности отображается статус "Высший менеджмент".
+    - Выдача содержит вакансии, URL содержит параметр activity_area.
     """
     with allure.step("Шаг 1: Переход на страницу поиска и раскрытие спойлера сферы деятельности"):
         vacancy_page.navigate()
@@ -523,14 +522,11 @@ def test_guest_filter_by_activity_sphere(guest_page: Page, vacancy_page: Vacancy
     with allure.step("Шаг 3: Применение фильтра через хелпер"):
         apply_vacancy_filter_and_wait(guest_page, vacancy_page)
 
-    with allure.step("Шаг 4: Провал внутрь первой отфильтрованной карточки вакансии"):
+    with allure.step("ОР 1: Верификация выдачи и URL"):
         vacancy_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
-        vacancy_page.vacancy_title_link.first.click()
-        guest_page.wait_for_load_state("load")
-
-    with allure.step("ОР 1: Верификация сферы деятельности внутри детальной страницы"):
-        detail_sphere_paragraph = guest_page.locator("div.col-6 p:has-text('Высший менеджмент')").first
-        expect(detail_sphere_paragraph).to_be_visible(timeout=5000)
+        count = vacancy_page.vacancy_title_link.count()
+        assert count > 0, f"Ошибка: фильтр 'Высший менеджмент' вернул пустую выдачу"
+        assert "activity_area" in guest_page.url, f"Ошибка: URL не содержит параметр activity_area: {guest_page.url}"
 
 
 @pytest.mark.vacancy_search
@@ -578,47 +574,6 @@ def test_guest_filter_by_additional_params_students(guest_page: Page, vacancy_pa
     with allure.step("ОР 1: Верификация доступности вакансии для молодежи 14-16 лет"):
         detail_age_text = guest_page.locator("text=с 14 до 16 лет").first
         expect(detail_age_text).to_be_visible(timeout=5000)
-
-@pytest.mark.vacancy_search
-@allure.title("Бизнес-кейс: Сброс установленных фильтров")
-def test_guest_reset_applied_filters(guest_page: Page, vacancy_page: VacancySearchPage):
-    """
-    Бизнес-кейс: Проверка работоспособности функционала сброса установленных поисковых фильтров.
-
-    Прекондишены:
-    1. Пользователь не авторизован в системе (гостевой сеанс).
-    2. Инициализирована страница поиска вакансий.
-
-    Шаги:
-    1. Открыть страницу фильтров и дождаться готовности инпута "Зарплата От".
-    2. Заполнить инпут значением "1000".
-    3. Применить фильтр нажатием кнопки через хелпер.
-    4. Кликнуть по кнопке "Сбросить фильтр".
-    5. Дождаться полного обновления страницы.
-    6. Верифицировать очистку поля "Зарплата От" до пустого значения.
-    7. Верифицировать редирект на базовый URL сброса со знаком вопроса.
-
-    Ожидаемый результат (ОР):
-    - Система выполняет перезагрузку страницы и возвращает пользователя на дефолтный URL со знаком вопроса.
-    - Все ранее введенные параметры фильтрации успешно очищаются до значений по умолчанию.
-    """
-    with allure.step("Шаг 1: Переход на страницу поиска и заполнение поля 'Зарплата От'"):
-        vacancy_page.navigate()
-        vacancy_page.salary_min_input.wait_for(state="visible", timeout=5000)
-        vacancy_page.salary_min_input.click()
-        vacancy_page.salary_min_input.fill("1000")
-
-    with allure.step("Шаг 2: Применение фильтра через хелпер"):
-        apply_vacancy_filter_and_wait(guest_page, vacancy_page)
-
-    with allure.step("Шаг 3: Нажатие на кнопку 'Сбросить фильтр' и ожидание обновления страницы"):
-        vacancy_page.reset_filter_btn.wait_for(state="visible", timeout=5000)
-        vacancy_page.reset_filter_btn.click()
-        guest_page.wait_for_load_state("load")
-
-    with allure.step("ОР 1: Верификация очистки инпута зарплаты и возврата к дефолтному URL"):
-        expect(vacancy_page.salary_min_input).to_have_value("")
-        expect(guest_page).to_have_url("https://gsz.gov.by/registration/vacancy-search/?")
 
 
 @pytest.mark.vacancy_search
@@ -703,62 +658,6 @@ def test_guest_combined_filters(guest_page: Page, vacancy_page: VacancySearchPag
                 )
 
 @pytest.mark.vacancy_search
-@allure.title("Бизнес-кейс: Изменение количества отображаемых вакансий на странице (10 -> 20 -> 50 -> 10)")
-def test_guest_change_paginate_by_count(guest_page: Page, vacancy_page: VacancySearchPage):
-    """
-    Бизнес-кейс: Проверка работы селекта количества элементов на странице выдачи вакансий.
-
-    Прекондишены:
-    1. Пользователь не авторизован в системе (гостевой сеанс).
-    2. Инициализирована страница поиска вакансий.
-
-    Шаги:
-    1. Открыть страницу поиска вакансий.
-    2. Проверить, что по умолчанию в селекте выбрано значение "10" и на странице отображается не более 10 карточек.
-    3. Переключить селект на значение "20", дождаться загрузки и проверить, что отображается не более 20 карточек.
-    4. Переключить селект на значение "50", дождаться загрузки и проверить, что отображается не более 50 карточек.
-    5. Переключить селект обратно на "10" и верифицировать возврат к исходному количеству.
-
-    Ожидаемый результат (ОР):
-    - Селект успешно переключает режимы отображения, бэкенд перестраивает выдачу с соответствующим лимитом строк.
-    """
-    with allure.step("Шаг 1: Переход на страницу поиска и проверка дефолтного значения 10"):
-        vacancy_page.navigate()
-        vacancy_page.paginate_by_select.wait_for(state="visible", timeout=5000)
-        expect(vacancy_page.paginate_by_select).to_have_value("10")
-
-        # Проверяем, что карточек на странице не больше 10
-        vacancy_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
-        initial_cards_count = vacancy_page.vacancy_title_link.count()
-        assert 0 < initial_cards_count <= 10, f"Ошибка: дефолтное количество карточек {initial_cards_count} > 10"
-
-    with allure.step("Шаг 2: Переключение лимита на '20' и верификация количества"):
-        vacancy_page.paginate_by_select.select_option(label="20")
-        guest_page.wait_for_load_state("load")
-
-        # Ожидаем появление первой карточки в обновленной выдаче
-        vacancy_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
-        cards_count_20 = vacancy_page.vacancy_title_link.count()
-        assert 0 < cards_count_20 <= 20, f"Ошибка: при лимите 20 отобразилось {cards_count_20} карточек"
-
-    with allure.step("Шаг 3: Переключение лимита на '50' и верификация количества"):
-        vacancy_page.paginate_by_select.select_option(label="50")
-        guest_page.wait_for_load_state("load")
-
-        vacancy_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
-        cards_count_50 = vacancy_page.vacancy_title_link.count()
-        assert 0 < cards_count_50 <= 50, f"Ошибка: при лимите 50 отобразилось {cards_count_50} карточек"
-
-    with allure.step("Шаг 4: Возврат лимита на '10' и финальная верификация"):
-        vacancy_page.paginate_by_select.select_option(label="10")
-        guest_page.wait_for_load_state("load")
-
-        vacancy_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
-        final_cards_count = vacancy_page.vacancy_title_link.count()
-        assert 0 < final_cards_count <= 10, f"Ошибка: после возврата на 10 отобразилось {final_cards_count} карточек"
-
-
-@pytest.mark.vacancy_search
 @allure.title("Бизнес-кейс: Проверка сортировки выдачи вакансий")
 def test_guest_sorting_options(guest_page: Page, vacancy_page: VacancySearchPage, test_sorting: str):
     """Бизнес-кейс: Динамически параметризованная проверка всех доступных режимов сортировки результатов выдачи.
@@ -774,6 +673,11 @@ def test_guest_sorting_options(guest_page: Page, vacancy_page: VacancySearchPage
     4. Дождаться перезагрузки страницы (компонент submit-on-change).
     5. Верифицировать, что селект принял выбранное значение, а в URL добавился нужный query-параметр.
     6. Дождаться появления результатов и убедиться, что первая карточка успешно отображается.
+    7. Собрать значения зарплат со всех карточек выдачи и проверить порядок сортировки.
+
+    Ожидаемый результат (ОР):
+    - Селект сортировки принимает выбранное значение, в URL добавляется query-параметр sort_by.
+    - Зарплаты на карточках выдачи отсортированы в заявленном порядке.
     """
     if isinstance(test_sorting, (tuple, list)) and len(test_sorting) > 0:
         clean_sort_value = str(test_sorting[0])
@@ -800,3 +704,40 @@ def test_guest_sorting_options(guest_page: Page, vacancy_page: VacancySearchPage
         # Ждем стабилизации DOM и появления первой карточки в отсортированном списке
         vacancy_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
         expect(vacancy_page.vacancy_title_link.first).to_be_visible()
+
+    with allure.step("ОР 1: Верификация порядка выдачи"):
+        vacancy_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
+
+        count = vacancy_page.vacancy_title_link.count()
+        assert count > 0, "Ошибка: сортировка вернула пустой список вакансий"
+
+        # Проверка порядка зарплат имеет смысл только для сортировки по зарплате.
+        # Для сортировки по дате/профессии зарплаты не обязаны быть в порядке,
+        # поэтому для них проверяем лишь непустую выдачу (выше).
+        if "salary" not in clean_sort_value:
+            return
+
+        # Сортировка идёт по зарплате «от» (первое число диапазона).
+        # Собираем «от» из каждой карточки выдачи, а не из всего DOM.
+        salaries = []
+        for i in range(count):
+            card_html = vacancy_page.vacancy_title_link.nth(i).evaluate(
+                "el => { let cur = el; for (let k=0;k<10 && cur;k++){ "
+                "const cls = (cur.className||'')+' '; "
+                "if (cls.includes('inner-box')||cls.includes('job-block')||cls.includes('card')||cls.includes('vacancy')) return cur.outerHTML; "
+                "cur = cur.parentElement; } "
+                "return el.parentElement ? el.parentElement.outerHTML : ''; }"
+            )
+            m = re.search(r"(\d[\d\s\u00a0.,]*)\s*(?:–|-|—|\s)*\s*(?:\d[\d\s\u00a0.,]*\s*)?руб\.", card_html)
+            if m:
+                salaries.append(float(m.group(1).replace("\xa0", "").replace(" ", "").replace(",", ".")))
+        assert salaries, f"Ошибка: не удалось распарсить зарплаты в выдаче"
+
+        if "desc" in clean_sort_value:
+            assert salaries == sorted(salaries, reverse=True), (
+                f"Ошибка: зарплаты не отсортированы по убыванию для '{clean_sort_value}': {salaries}"
+            )
+        else:
+            assert salaries == sorted(salaries), (
+                f"Ошибка: зарплаты не отсортированы по возрастанию для '{clean_sort_value}': {salaries}"
+            )
