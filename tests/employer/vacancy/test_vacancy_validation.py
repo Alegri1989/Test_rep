@@ -18,10 +18,22 @@ class TestVacancyFieldValidation:
         self, open_create_vacancy_page: Page
     ):
         """
-        Если «Свободно рабочих мест» < суммы полей «Из них»,
+        Бизнес-кейс: Если «Свободно рабочих мест» < суммы полей «Из них»,
         после нажатия «Сохранить» появляется сообщение
         «Недостаточно свободных рабочих мест» под полем.
-        """
+
+    Прекондишены:
+    1. Пользователь авторизован как наниматель.
+    2. Открыта форма создания вакансии.
+
+    Шаги:
+    1. Ввести «Свободно рабочих мест» = 2.
+    2. Ввести одно из полей «Из них» = 3 (итого > 2).
+    3. Нажать «Сохранить вакансию».
+
+    Ожидаемый результат (ОР):
+    - Под полем «Свободно» видна ошибка валидации «Недостаточно свободных рабочих мест».
+    """
         page = open_create_vacancy_page
         form = VacancyCreatePage(page)
 
@@ -46,6 +58,22 @@ class TestVacancyFieldValidation:
     def test_salary_from_exceeds_salary_to(
         self, open_create_vacancy_page: Page
     ):
+        """
+        Бизнес-кейс: Если зарплата «от» > «до», после нажатия «Сохранить»
+
+появляется ошибка валидации диапазона зарплат.
+
+            Прекондишены:
+            1. Пользователь авторизован как наниматель.
+    2. Открыта форма создания вакансии.
+
+    Шаги:
+    1. Ввести зарплату «от» = 5000, «до» = 3000.
+    2. Нажать «Сохранить вакансию».
+
+    Ожидаемый результат (ОР):
+    - Видна ошибка валидации «Минимальная заработная плата не может превышать максимальную.».
+    """
         page = open_create_vacancy_page
         form = VacancyCreatePage(page)
 
@@ -53,49 +81,79 @@ class TestVacancyFieldValidation:
             form.salary_input.fill("5000")
             form.salary_limit_input.fill("3000")
 
-        with allure.step("Нажать 'Сохранить вакансию'"):
-            form.submit_button.click()
+            with allure.step("Нажать 'Сохранить вакансию'"):
+                form.submit_button.click()
 
-        with allure.step("ОР: видна ошибка валидации диапазона зарплат"):
-            error = page.locator(
-                "#id_salary ~ .invalid-feedback, "
-                "#id_salary + .invalid-feedback, "
-                "#id_salary_limit ~ .invalid-feedback, "
-                "#id_salary_limit + .invalid-feedback"
-            ).first
-            expect(error).to_be_visible(timeout=5000)
-            expect(error).to_contain_text(
-                "Минимальная заработная плата не может превышать максимальную."
-            )
+            with allure.step("ОР: видна ошибка валидации диапазона зарплат"):
+                error = page.locator(
+                    "#id_salary ~ .invalid-feedback, "
+                    "#id_salary + .invalid-feedback, "
+                    "#id_salary_limit ~ .invalid-feedback, "
+                    "#id_salary_limit + .invalid-feedback"
+                ).first
+                expect(error).to_be_visible(timeout=5000)
+                expect(error).to_contain_text(
+                    "Минимальная заработная плата не может превышать максимальную."
+                )
 
     @allure.title("Зарплата с тремя знаками после запятой → ошибка формата")
     def test_salary_too_many_decimal_places(
         self, open_create_vacancy_page: Page
     ):
+        """
+        Бизнес-кейс: Если зарплата введена с тремя знаками после запятой,
+
+после нажатия «Сохранить» появляется ошибка формата.
+
+            Прекондишены:
+    1. Пользователь авторизован как наниматель.
+    2. Открыта форма создания вакансии.
+
+    Шаги:
+    1. Ввести зарплату с тремя знаками после запятой.
+    2. Нажать «Сохранить вакансию».
+
+    Ожидаемый результат (ОР):
+    - Под полем зарплаты ошибка «Убедитесь, что вы ввели не более 2 цифр после запятой.».
+    """
         page = open_create_vacancy_page
         form = VacancyCreatePage(page)
 
         with allure.step("Ввести зарплату с тремя знаками после запятой"):
             form.salary_input.fill("1000.123")
 
-        with allure.step("Нажать 'Сохранить вакансию'"):
-            form.submit_button.click()
+            with allure.step("Нажать 'Сохранить вакансию'"):
+                form.submit_button.click()
 
-        with allure.step("ОР: под полем зарплаты ошибка про 2 знака после запятой"):
-            error = page.locator(
-                "#id_salary ~ .invalid-feedback, "
-                "#id_salary + .invalid-feedback"
-            )
-            expect(error).to_be_visible(timeout=5000)
-            expect(error).to_contain_text(
-                "Убедитесь, что вы ввели не более 2 цифр после запятой."
-            )
+            with allure.step("ОР: под полем зарплаты ошибка про 2 знака после запятой"):
+                error = page.locator(
+                    "#id_salary ~ .invalid-feedback, "
+                    "#id_salary + .invalid-feedback"
+                )
+                expect(error).to_be_visible(timeout=5000)
+                expect(error).to_contain_text(
+                    "Убедитесь, что вы ввели не более 2 цифр после запятой."
+                )
 
     @allure.title("Зарплата 'до' превышает 'от' более чем в 3 раза → ошибка")
     def test_salary_limit_exceeds_triple_salary(
         self, open_create_vacancy_page: Page
     ):
-        """salary_limit > salary * 3 → ошибка под полем 'до'."""
+        """
+    Бизнес-кейс: Если зарплата «до» превышает «от» более чем в 3 раза,
+    после нажатия «Сохранить» появляется ошибка под полем «до».
+
+    Прекондишены:
+    1. Пользователь авторизован как наниматель.
+    2. Открыта форма создания вакансии.
+
+    Шаги:
+    1. Ввести зарплату «от» = 1000, «до» = 3001.
+    2. Нажать «Сохранить вакансию».
+
+    Ожидаемый результат (ОР):
+    - Ошибка «Максимальная заработная плата превышает 1000 более чем в 3 раза».
+    """
         page = open_create_vacancy_page
         form = VacancyCreatePage(page)
 
@@ -125,9 +183,20 @@ class TestVacancyFieldValidation:
         self, open_create_vacancy_page: Page, wage_rate: str, salary: str
     ):
         """
-        Зарплата > min_wage * rate * 10 → браузерный confirm с предупреждением.
-        Тест принимает диалог (OK) и проверяет текст.
-        """
+        Бизнес-кейс: Если зарплата > min_wage * rate * 10, после нажатия «Сохранить»
+        появляется браузерный confirm с предупреждением.
+
+    Прекондишены:
+    1. Пользователь авторизован как наниматель.
+    2. Открыта форма создания вакансии.
+
+    Шаги:
+    1. Ввести ставку и зарплату, превышающую минимальную в 10 раз.
+    2. Нажать «Сохранить» и дождаться confirm-диалога.
+
+    Ожидаемый результат (ОР):
+    - Диалог содержит предупреждение о превышении минимальной зарплаты в 10 раз.
+    """
         page = open_create_vacancy_page
         form = VacancyCreatePage(page)
 
@@ -163,9 +232,22 @@ class TestVacancyFieldValidation:
         self, open_create_vacancy_page: Page, wage_rate: str, salary_below: str
     ):
         """
-        При ставке wage_rate зарплата не может быть ниже min_wage * wage_rate.
-        Ожидаемое сообщение вычисляется из belarus_min_wage в config.json.
-        """
+        Бизнес-кейс: При ставке wage_rate зарплата не может быть ниже min_wage * wage_rate.
+        После нажатия «Сохранить» появляется ошибка валидации.
+
+    Ожидаемое сообщение вычисляется из belarus_min_wage в config.json.
+
+    Прекондишены:
+    1. Пользователь авторизован как наниматель.
+    2. Открыта форма создания вакансии.
+
+    Шаги:
+    1. Ввести ставку и зарплату ниже минимальной для этой ставки.
+    2. Нажать «Сохранить вакансию».
+
+    Ожидаемый результат (ОР):
+    - Ошибка «Для ставки {wage_rate} уровень зарплаты не должен быть ниже минимальной {expected_min:.2f}».
+    """
         page = open_create_vacancy_page
         form = VacancyCreatePage(page)
 

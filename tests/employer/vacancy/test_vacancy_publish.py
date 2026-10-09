@@ -12,7 +12,13 @@ ARCHIVE_LIST_URL = "https://gsz.gov.by/registration/employer/vacancy/list/archiv
 
 
 def _send_vacancy(page: Page, vacancy_id: str, workplace_id: int):
-    """Нажимает 'Отправить' на странице черновиков и подтверждает в модалке."""
+    """Нажимает 'Отправить' на странице черновиков и подтверждает в модалке.
+
+    Если вакансия с той же профессией уже опубликована, появляется вторая
+    модалка «Аналогичная вакансия уже опубликована», где «Отправить» — это
+    якорь <a href=".../send-duplicate/?id=...">, а не кнопка. Клик по нему
+    публикует вакансию.
+    """
     goto_with_retry(page, f"{DRAFT_LIST_URL}?workplace_id={workplace_id}", wait_until="load")
     page.wait_for_load_state("load")
     page.wait_for_timeout(2000)
@@ -26,8 +32,48 @@ def _send_vacancy(page: Page, vacancy_id: str, workplace_id: int):
     confirm_btn = modal.locator("button:has-text('Да')")
     confirm_btn.wait_for(state="visible", timeout=5000)
     confirm_btn.click()
+    page.wait_for_timeout(2500)
+
+    # Вторая модалка дубликата: «Отправить» — якорь send-duplicate
+    duplicate_confirm = page.locator("#vacancy_already_published_error a:has-text('Отправить')")
+    if duplicate_confirm.count() == 0:
+        duplicate_confirm = page.locator(".modal.show a:has-text('Отправить')")
+    if duplicate_confirm.count() > 0:
+        duplicate_confirm.first.wait_for(state="visible", timeout=5000)
+        duplicate_confirm.first.click()
+        page.wait_for_timeout(2000)
+
+    try:
+        page.wait_for_load_state("networkidle", timeout=10000)
+    except Exception:
+        page.wait_for_timeout(2000)
+    page.wait_for_timeout(1000)
+
+
+def _delete_all_drafts(page: Page, workplace_id: int):
+    """Удаляет все черновики (остатки предыдущих прогонов)."""
+    goto_with_retry(page, f"{DRAFT_LIST_URL}?workplace_id={workplace_id}", wait_until="load")
     page.wait_for_load_state("load")
     page.wait_for_timeout(2000)
+
+    for _ in range(20):
+        delete_btn = page.locator("button[onclick*='open_delete_vacancy']")
+        if delete_btn.count() == 0:
+            break
+        delete_btn.first.click()
+        page.wait_for_timeout(1000)
+        confirm_btn = page.locator(
+            ".modal.show button:has-text('Да'), "
+            ".modal.show button[type='submit'], "
+            "button.delete_vacancy__button"
+        ).first
+        confirm_btn.wait_for(state="visible", timeout=5000)
+        confirm_btn.click()
+        try:
+            page.wait_for_load_state("networkidle", timeout=10000)
+        except Exception:
+            page.wait_for_timeout(1500)
+        page.wait_for_timeout(1000)
 
 
 def _unpublish_vacancy(page: Page, vacancy_id: str, workplace_id: int):
@@ -116,7 +162,7 @@ def _is_in_archive(page: Page, vacancy_id: str, workplace_id: int) -> bool:
 @allure.title("Полный цикл: создание → отправка → опубликованные → снятие → архив → удаление")
 def test_vacancy_publish_unpublish_workflow(auth_employer_page: Page, app_config):
     """
-    E2E тест полного цикла публикации вакансии:
+    Бизнес-кейс: E2E тест полного цикла публикации вакансии:
     1. Создать вакансию (черновик) со всеми полями.
     2. Нажать 'Отправить' → вакансия попадает в 'Опубликованные'.
     3. Проверить, что вакансия в списке опубликованных.
@@ -127,6 +173,18 @@ def test_vacancy_publish_unpublish_workflow(auth_employer_page: Page, app_config
     Прекондишены:
     1. Пользователь авторизован как наниматель.
     2. Существует контактное лицо и рабочее место.
+
+    Шаги:
+    1. Создать вакансию (черновик) со всеми полями.
+    2. Отправить вакансию (черновик → опубликованные).
+    3. Проверить, что вакансия в списке опубликованных.
+    4. Снять вакансию с публикации, выбрав причину.
+    5. Проверить, что вакансия НЕ в опубликованных и ЕСТЬ в архиве.
+    6. Удалить вакансию (очистка).
+
+    Ожидаемый результат (ОР):
+    - Вакансия успешно публикуется и отображается в списке опубликованных.
+    - После снятия с публикации вакансия исчезает из опубликованных и появляется в архиве.
     """
     page = auth_employer_page
     vacancy_cfg = app_config["employer"]["test_vacancy"]
@@ -137,6 +195,10 @@ def test_vacancy_publish_unpublish_workflow(auth_employer_page: Page, app_config
     vacancy_id = None
 
     try:
+        # ── Прекондишн: очистка старых черновиков ────────────────────────────
+        with allure.step("Прекондишн: удаление старых черновиков (остатки предыдущих прогонов)"):
+            _delete_all_drafts(page, workplace_id)
+
         # ── Шаг 1: Создание вакансии ─────────────────────────────────────────
         with allure.step("Шаг 1: Создание вакансии (черновик)"):
             goto_with_retry(page, CREATE_VACANCY_URL, wait_until="load")

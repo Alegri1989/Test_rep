@@ -367,78 +367,79 @@ class TestProfilePart2:
             # 4. ОБЯЗАТЕЛЬНО сохраняем, чтобы вернуть профиль в исходное состояние
             profile.save_changes()
 
-        @allure.title("Изменение email для рассылок")
-        def test_edit_email_message(self, open_profile_page: Page, app_config):
-            """
-            Бизнес-кейс: Изменение контактного адреса электронной почты для системных уведомлений.
+    @allure.title("Изменение email для рассылок")
+    def test_edit_email_message(self, open_profile_page: Page, app_config):
+        """
+        Бизнес-кейс: Изменение контактного адреса электронной почты для системных уведомлений.
 
-            Прекондишены:
-            1. Пользователь успешно авторизован в системе.
-            2. Открыта страница персональных данных.
+        Прекондишены:
+        1. Пользователь успешно авторизован в системе.
+        2. Открыта страница персональных данных.
 
-            Шаги:
-            1. Ввести в инпут Email новый валидный тестовый адрес почты.
-            2. Нажать кнопку "Сохранить" и дождаться подтверждения операции.
-            3. Верифицировать успешное отображение нового значения на UI.
-            4. Восстановить первоначальный дефолтный Email соискателя из конфигурации.
+        Шаги:
+        1. Ввести в инпут Email новый валидный тестовый адрес почты.
+        2. Нажать кнопку "Сохранить" и дождаться подтверждения операции.
+        3. Верифицировать успешное отображение нового значения на UI.
+        4. Восстановить первоначальный дефолтный Email соискателя из конфигурации.
 
-            Ожидаемый результат (ОР):
-            - Поле ввода корректно перезаписывает данные и сохраняет новый Email.
-            - Система стабилизирует DOM после успешной отправки формы.
-            """
-            profile = ProfilePage(open_profile_page)
-            default_email = app_config["default_profile"]["email_sent"]
-            test_email = app_config["profile_test_data"]["edit_contacts"]["test_email"]
+        Ожидаемый результат (ОР):
+        - Поле ввода корректно перезаписывает данные и сохраняет новый Email.
+        - Система стабилизирует DOM после успешной отправки формы.
+        """
+        profile = ProfilePage(open_profile_page)
+        default_email = app_config["default_profile"]["email_sent"]
+        test_email = app_config["profile_test_data"]["edit_contacts"]["test_email"]
 
-            with allure.step(f"Шаг 1: Изменение email на тестовый: {test_email}"):
-                profile.fill_field_safely(profile.email_message_input, test_email)
-                profile.save_changes()
+        with allure.step(f"Шаг 1: Изменение email на тестовый: {test_email}"):
+            profile.fill_field_safely(profile.email_message_input, test_email)
+            profile.save_changes()
 
-            with allure.step("ОР 1: Проверка сохранения нового email"):
-                expect(profile.email_message_input).to_have_value(test_email)
+        with allure.step("ОР 1: Проверка сохранения нового email"):
+            expect(profile.email_message_input).to_have_value(test_email)
 
-            with allure.step(f"Шаг 2: Возврат к дефолтному email: {default_email}"):
-                profile.fill_field_safely(profile.email_message_input, default_email)
-                profile.save_changes()
+        with allure.step(f"Шаг 2: Возврат к дефолтному email: {default_email}"):
+            profile.fill_field_safely(profile.email_message_input, default_email)
+            profile.save_changes()
 
-            with allure.step("ОР 2: Проверка возврата email к дефолтному значению"):
-                expect(profile.email_message_input).to_have_value(default_email)
+        with allure.step("ОР 2: Проверка возврата email к дефолтному значению"):
+            expect(profile.email_message_input).to_have_value(default_email)
 
-        @allure.title("Негативный тест: Попытка изменения email на уже занятый")
-        def test_edit_email_already_taken_negative(self, open_profile_page: Page, app_config):
-            """
-            Бизнес-кейс: Негативный сценарий валидации уникальности Email при попытке сохранения уже зарегистрированного адреса.
+    @allure.title("Негативный тест: Попытка изменения email на уже занятый")
+    def test_edit_email_already_taken_negative(self, open_profile_page: Page, app_config):
+        """
+        Бизнес-кейс: Негативный сценарий валидации уникальности Email при попытке сохранения уже зарегистрированного адреса.
 
-            Прекондишены:
-            1. Пользователь успешно авторизован в системе.
-            2. Открыта страница персональных данных.
+        Прекондишены:
+        1. Пользователь успешно авторизован в системе.
+        2. Открыта страница персональных данных.
 
-            Шаги:
-            1. Ввести в инпут Email тестовый адрес, который гарантированно занят другим аккаунтом в системе.
-            2. Нажать кнопку "Сохранить" и дождаться ответа сервера.
-            3. Зафиксировать появление красной плашки ошибки и текста валидации под полем.
-            4. Очистить поле и вернуть исходный корректный Email обратно.
+        Шаги:
+        1. Ввести в инпут Email тестовый адрес, который гарантированно занят другим аккаунтом в системе.
+        2. Нажать кнопку "Сохранить" и дождаться ответа сервера.
+        3. Зафиксировать появление красной плашки ошибки и текста валидации под полем.
+        4. Очистить поле и вернуть исходный корректный Email обратно.
 
-            Ожидаемый результат (ОР):
-            - Форма блокирует сохранение дубликата, бэкенд возвращает ошибку валидации.
-            - Под инпутом выводится строгий текст ошибки "Email занят".
-            """
-            profile = ProfilePage(open_profile_page)
-            default_email = app_config["default_profile"]["email_sent"]
-            taken_email = app_config["profile_test_data"]["negative_contacts"]["already_taken_email"]
+        Ожидаемый результат (ОР):
+        - Форма блокирует сохранение дубликата, бэкенд возвращает ошибку валидации.
+        - Под инпутом выводится строгий текст ошибки "Email занят".
+        """
+        profile = ProfilePage(open_profile_page)
+        default_email = app_config["default_profile"]["email_sent"]
+        taken_email = app_config["profile_test_data"]["negative_contacts"]["already_taken_email"]
 
-            with allure.step(f"Шаг 1: Ввод занятого email: {taken_email}"):
-                profile.fill_field_safely(profile.email_message_input, taken_email)
-                profile.save_changes()
+        with allure.step(f"Шаг 1: Ввод занятого email: {taken_email}"):
+            profile.fill_field_safely(profile.email_message_input, taken_email)
+            profile.save_changes()
 
-            with allure.step("ОР: Отображение красной плашки и ошибки 'Email занят' под полем"):
-                expect(profile.error_alert).to_be_visible()
-                expect(profile.email_error_message).to_have_text("Email занят")
+        with allure.step("ОР: Отображение красной плашки и ошибки 'Email занят' под полем"):
+            expect(profile.error_alert).to_be_visible()
+            expect(profile.email_error_message).to_have_text("Email занят")
 
-            with allure.step("Шаг 2: Восстановление дефолтного email"):
-                profile.fill_field_safely(profile.email_message_input, default_email)
-                profile.save_changes()
-                expect(profile.email_message_input).to_have_value(default_email)
+        with allure.step("Шаг 2: Восстановление дефолтного email"):
+            profile.fill_field_safely(profile.email_message_input, default_email)
+            profile.save_changes()
+            expect(profile.email_message_input).to_have_value(default_email)
+
 
 @allure.epic("Личный кабинет соискателя")
 @allure.feature("Редактирование профиля")

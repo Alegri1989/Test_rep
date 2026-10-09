@@ -3,6 +3,7 @@ import allure
 import pytest
 from playwright.sync_api import Page
 from helpers.network_helper import goto_with_retry
+from helpers.vacancy_helper import create_and_publish_vacancy, cleanup_vacancy
 
 BASE_URL = "https://gsz.gov.by"
 PUBLISHED_LIST_URL = f"{BASE_URL}/registration/employer/vacancy/list/published/"
@@ -59,40 +60,49 @@ class TestPublishedVacancyBOLA:
         page = auth_employer_page
         employer_cfg = app_config["employer"]
         workplace_id = employer_cfg["permanent_workplace_id"]
+        created_id = None
 
-        with allure.step("Шаг 1: Получить ID своей опубликованной вакансии"):
-            own_id = _get_own_published_vacancy_id(page, workplace_id)
-            assert own_id, (
-                f"Ошибка: не найдена своя опубликованная вакансия "
-                f"для workplace_id={workplace_id}"
-            )
-            allure.attach(own_id, name="Свой ID вакансии")
+        try:
+            with allure.step("Шаг 1: Получить ID своей опубликованной вакансии (создать, если нет)"):
+                own_id = _get_own_published_vacancy_id(page, workplace_id)
+                if not own_id:
+                    own_id = create_and_publish_vacancy(page, app_config)
+                    created_id = own_id
+                allure.attach(own_id, name="Свой ID вакансии")
 
-        with allure.step(f"Шаг 2: Проверить, что своя вакансия {own_id} открывается"):
-            own_url = f"{BASE_URL}/registration/employer/vacancy-published/{own_id}/edit/"
-            page.goto(own_url, timeout=15000, wait_until="domcontentloaded")
-            page.wait_for_timeout(2000)
-            own_fields = _count_form_fields(page)
-            allure.attach(str(own_fields), name="Количество полей своей вакансии")
-            assert own_fields > 0, (
-                f"Ошибка: своя вакансия {own_id} не открывается (0 полей)"
-            )
+            with allure.step(f"Шаг 2: Проверить, что своя вакансия {own_id} открывается"):
+                own_url = f"{BASE_URL}/registration/employer/vacancy-published/{own_id}/edit/"
+                page.goto(own_url, timeout=15000, wait_until="domcontentloaded")
+                page.wait_for_timeout(2000)
+                own_fields = _count_form_fields(page)
+                allure.attach(str(own_fields), name="Количество полей своей вакансии")
+                assert own_fields > 0, (
+                    f"Ошибка: своя вакансия {own_id} не открывается (0 полей)"
+                )
 
-        with allure.step(f"Шаг 3: Попытка открыть чужую вакансию {own_id}-1"):
-            foreign_id = str(int(own_id) - 1)
-            foreign_url = f"{BASE_URL}/registration/employer/vacancy-published/{foreign_id}/edit/"
-            page.goto(foreign_url, timeout=15000, wait_until="domcontentloaded")
-            page.wait_for_timeout(2000)
-            foreign_fields = _count_form_fields(page)
-            body_text = page.evaluate("() => document.body.innerText")[:300]
-            allure.attach(foreign_id, name="Чужой ID вакансии")
-            allure.attach(str(foreign_fields), name="Количество полей чужой вакансии")
-            allure.attach(body_text, name="Текст страницы чужой вакансии")
+            with allure.step(f"Шаг 3: Попытка открыть чужую вакансию {own_id}-1"):
+                foreign_id = str(int(own_id) - 1)
+                foreign_url = f"{BASE_URL}/registration/employer/vacancy-published/{foreign_id}/edit/"
+                page.goto(foreign_url, timeout=15000, wait_until="domcontentloaded")
+                page.wait_for_timeout(2000)
+                foreign_fields = _count_form_fields(page)
+                body_text = page.evaluate("() => document.body.innerText")[:300]
+                allure.attach(foreign_id, name="Чужой ID вакансии")
+                allure.attach(str(foreign_fields), name="Количество полей чужой вакансии")
+                allure.attach(body_text, name="Текст страницы чужой вакансии")
 
-        with allure.step("ОР 1: Чужая вакансия НЕ открывается (нет формы редактирования)"):
-            assert foreign_fields == 0, (
-                f"BOLA: чужая вакансия {foreign_id} открыта с формой редактирования "
-                f"({foreign_fields} полей)! Должна быть недоступна."
-            )
+            with allure.step("ОР 1: Чужая вакансия НЕ открывается (нет формы редактирования)"):
+                assert foreign_fields == 0, (
+                    f"BOLA: чужая вакансия {foreign_id} открыта с формой редактирования "
+                    f"({foreign_fields} полей)! Должна быть недоступна."
+                )
+
+        finally:
+            with allure.step("Очистка: удаление созданной вакансии (если создали)"):
+                if created_id:
+                    try:
+                        cleanup_vacancy(page, created_id, app_config)
+                    except Exception as e:
+                        allure.attach(str(e), name="Ошибка при очистке вакансии")
 
 
