@@ -1,4 +1,5 @@
 import re
+from datetime import datetime
 import allure
 import pytest
 from playwright.sync_api import Page, expect
@@ -157,6 +158,49 @@ def _is_in_archive(page: Page, vacancy_id: str, workplace_id: int) -> bool:
     return page.locator(f"button[onclick*='open_copy_to_draft_confirm({vacancy_id})']").count() > 0
 
 
+RU_MONTHS = {
+    "января": 1, "февраля": 2, "марта": 3, "апреля": 4, "мая": 5, "июня": 6,
+    "июля": 7, "августа": 8, "сентября": 9, "октября": 10, "ноября": 11, "декабря": 12,
+}
+
+
+def _get_archive_date_line(page: Page, vacancy_id: str, workplace_id: int) -> str:
+    """Возвращает текст строки 'Дата состаривания' из карточки вакансии в архиве."""
+    goto_with_retry(page, f"{ARCHIVE_LIST_URL}?workplace_id={workplace_id}", wait_until="load")
+    page.wait_for_load_state("load")
+    page.wait_for_timeout(2000)
+    copy_btn = page.locator(f"button[onclick*='open_copy_to_draft_confirm({vacancy_id})']")
+    copy_btn.wait_for(state="visible", timeout=5000)
+    card = copy_btn.locator("xpath=ancestor::div[contains(., 'Дата состаривания')][1]")
+    line = card.locator("li:has(span[title='Дата состаривания'])").first
+    return line.inner_text().strip()
+
+
+def _assert_archived_with_date(page: Page, vacancy_id: str, workplace_id: int):
+    """Проверяет, что у вакансии в архиве указана дата состаривания —
+    дата и время, когда вакансия была снята с публикации (состарена)."""
+    line = _get_archive_date_line(page, vacancy_id, workplace_id)
+    allure.attach(line, name="Дата состаривания в архиве")
+    m = re.match(r"Дата состаривания:\s*(\d{1,2})\s+([а-яё]+)\s+(\d{4})\s+г\.\s*(\d{1,2}):(\d{2})", line)
+    assert m, (
+        f"Ошибка: у вакансии {vacancy_id} в архиве не указана дата состаривания. "
+        f"Получено: {line!r}"
+    )
+    month = RU_MONTHS.get(m.group(2))
+    assert month, f"Ошибка: не распознан месяц в дате состаривания: {line!r}"
+    archived_at = datetime(int(m.group(3)), month, int(m.group(1)), int(m.group(4)), int(m.group(5)))
+    now = datetime.now()
+    assert archived_at.date() == now.date(), (
+        f"Ошибка: дата состаривания {archived_at.date()} не совпадает с датой снятия "
+        f"вакансии с публикации {now.date()}. Строка: {line!r}"
+    )
+    drift = abs((now - archived_at).total_seconds())
+    assert drift <= 30 * 60, (
+        f"Ошибка: время состаривания {archived_at:%H:%M} расходится с текущим временем "
+        f"{now:%H:%M} более чем на 30 минут. Строка: {line!r}"
+    )
+
+
 @allure.epic("Личный кабинет нанимателя")
 @allure.feature("Публикация вакансий")
 @allure.title("Полный цикл: создание → отправка → опубликованные → снятие → архив → удаление")
@@ -231,7 +275,10 @@ def test_vacancy_publish_unpublish_workflow(auth_employer_page: Page, app_config
             form.language_select_0.select_option(value=vacancy_cfg["language_1_value"], force=True)
             form.lang_level_select_0.select_option(value=vacancy_cfg["language_level_value"], force=True)
             form.select_workplace(workplace_name)
-            page.wait_for_load_state("networkidle", timeout=15000)
+            try:
+                page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception:
+                page.wait_for_timeout(3000)
 
             page.evaluate("""
                 ['id_region', 'id_district', 'id_address'].forEach(function(id) {
@@ -273,13 +320,14 @@ def test_vacancy_publish_unpublish_workflow(auth_employer_page: Page, app_config
         with allure.step(f"Шаг 3: Снятие вакансии {vacancy_id} с публикации"):
             _unpublish_vacancy(page, vacancy_id, workplace_id)
 
-        with allure.step("ОР 2: Вакансия НЕ в опубликованных, ЕСТЬ в архиве"):
+        with allure.step("ОР 2: Вакансия НЕ в опубликованных, ЕСТЬ в архиве с датой состаривания"):
             assert not _is_in_published(page, vacancy_id, workplace_id), (
                 f"Ошибка: вакансия {vacancy_id} всё ещё в списке опубликованных после снятия"
             )
             assert _is_in_archive(page, vacancy_id, workplace_id), (
                 f"Ошибка: вакансия {vacancy_id} не найдена в архиве после снятия с публикации"
             )
+            _assert_archived_with_date(page, vacancy_id, workplace_id)
 
     finally:
         # ── Очистка: удалить вакансию ────────────────────────────────────────
