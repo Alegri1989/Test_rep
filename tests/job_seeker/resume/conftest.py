@@ -2,8 +2,24 @@ import allure
 import pytest
 from playwright.sync_api import Page
 from pages.resume_page import ResumePage
-from helpers.resume_helper import fill_and_submit_resume_form, fill_and_submit_required_resume_fields
+from helpers.resume_helper import (
+    fill_and_submit_resume_form,
+    fill_and_submit_required_resume_fields,
+    clear_all_resumes_from_account,
+)
 from helpers.network_helper import goto_with_retry
+
+
+@pytest.fixture(autouse=True)
+def clean_resumes_before_test(auth_page: Page):
+    """Независимость тестов: перед каждым тестом удаляем все резюме с аккаунта.
+
+    Гарантирует, что каждый тест стартует с чистого состояния:
+    нет опубликованных резюме (лимит 3 не блокирует публикацию)
+    и нет черновиков, мешающих подсчётам.
+    """
+    clear_all_resumes_from_account(auth_page)
+    yield
 
 
 @pytest.fixture(scope="function")
@@ -41,6 +57,10 @@ def prepare_resume_for_publication(auth_page: Page):
         goto_with_retry(auth_page, clean_url, wait_until="domcontentloaded")
         auth_page.wait_for_load_state("domcontentloaded")
 
+    # Гарантируем чистое состояние: снимаем с публикации и удаляем все старые резюме,
+    # иначе лимит в 3 опубликованных резюме блокирует публикацию нового.
+    clear_all_resumes_from_account(auth_page)
+
     try:
         resume.create_resume_button.wait_for(state="visible", timeout=3000)
     except Exception:
@@ -69,6 +89,10 @@ def prepare_maximum_published_resumes(auth_page: Page):
     if auth_page.url != clean_url:
         goto_with_retry(auth_page, clean_url, wait_until="domcontentloaded")
         auth_page.wait_for_load_state("domcontentloaded")
+
+    # Гарантируем чистое состояние: из-за лимита в 3 опубликованных резюме
+    # кнопка публикации блокируется и фикстура зависает.
+    clear_all_resumes_from_account(auth_page)
 
     while resume.all_unpublish_links.count() > 3:
         resume.all_unpublish_links.first.click()

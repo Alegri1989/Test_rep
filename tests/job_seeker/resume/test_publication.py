@@ -3,6 +3,7 @@ import pytest
 from playwright.sync_api import Page, expect
 from pages.resume_page import ResumePage
 from helpers.resume_helper import fill_and_submit_required_resume_fields, clear_all_resumes_from_account
+from helpers.network_helper import goto_with_retry
 
 
 class TestResumePublication:
@@ -106,9 +107,20 @@ class TestResumePublication:
         page = open_create_resume_page
         resume = ResumePage(page)
         resume_list_url = "https://gsz.gov.by/registration/job-seeker/resume/list/"
+        create_url = "https://gsz.gov.by/registration/job-seeker/resume/create/"
 
         try:
+            # Гарантируем чистое состояние: иначе лимит в 3 опубликованных резюме
+            # блокирует публикацию созданного резюме.
+            with allure.step("Прекондишн: очистка старых резюме с аккаунта"):
+                goto_with_retry(page, resume_list_url, wait_until="load")
+                page.wait_for_load_state("load")
+                clear_all_resumes_from_account(page)
+
             with allure.step("Шаг 1: Быстрое создание резюме через хелпер"):
+                goto_with_retry(page, create_url, wait_until="load")
+                # Поле должности рендерится через select2: ждём контейнер, а не нативный select
+                resume.profession_container.wait_for(state="visible", timeout=30000)
                 fill_and_submit_required_resume_fields(page)
                 page.goto(resume_list_url)
                 page.wait_for_load_state("networkidle")

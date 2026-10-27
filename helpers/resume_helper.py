@@ -108,14 +108,18 @@ def clear_all_resumes_from_account(page: Page):
         goto_with_retry(page, resume_list_url, wait_until="load")
         page.wait_for_load_state("load")
 
-    # Сначала снимаем все опубликованные резюме с публикации с паузой
-    while resume.all_unpublish_links.count() > 0:
+    # Сначала снимаем все опубликованные резюме с публикации (защита от зацикливания)
+    for _ in range(10):
+        if resume.all_unpublish_links.count() == 0:
+            break
         resume.all_unpublish_links.first.click()
         page.wait_for_load_state("load")
         page.wait_for_timeout(1500)
 
     # Пошагово удаляем каждый черновик с задержкой между удалениями
-    while resume.all_delete_buttons.count() > 0:
+    for _ in range(10):
+        if resume.all_delete_buttons.count() == 0:
+            break
         initial_count = resume.all_delete_buttons.count()
         page.wait_for_timeout(1500)
 
@@ -133,6 +137,23 @@ def clear_all_resumes_from_account(page: Page):
 
         resume.delete_resume_modal.wait_for(state="hidden", timeout=5000)
         page.wait_for_load_state("load")
+
+    # Финальная проверка: если что-то осталось опубликованным — снимаем ещё раз
+    if resume.all_unpublish_links.count() > 0:
+        for _ in range(10):
+            if resume.all_unpublish_links.count() == 0:
+                break
+            resume.all_unpublish_links.first.click()
+            page.wait_for_load_state("load")
+            page.wait_for_timeout(1500)
+        for _ in range(10):
+            if resume.all_delete_buttons.count() == 0:
+                break
+            resume.all_delete_buttons.first.click()
+            resume.popup_confirm_delete_btn.wait_for(state="visible", timeout=3000)
+            resume.popup_confirm_delete_btn.click()
+            resume.delete_resume_modal.wait_for(state="hidden", timeout=5000)
+            page.wait_for_load_state("load")
 
 
 def clear_resume_by_id(page: Page, resume_id: str):

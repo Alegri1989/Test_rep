@@ -18,3 +18,20 @@ videos/
 log.txt
 test_run_results*.txt
 *.zip
+
+# Логи прогонов и временные диагностические файлы
+*.log
+diag_*.py
+cf_out.txt
+cleanup_final.py
+report.txt
+security_findings.md
+anal.md
+
+# Локальные заметки и память
+MEMORY.md
+memory/
+
+# JRE/JDK для Allure
+jdk-*/
+allure-*/

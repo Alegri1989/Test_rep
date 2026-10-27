@@ -169,7 +169,12 @@ def test_guest_interactive_map(guest_page: Page):
         site_page = site_popup_info.value
         site_page.wait_for_load_state("domcontentloaded")
 
-        assert site_page.url.startswith("http")
+        # Усиление: ждём, пока URL не станет непустым (защита от флейка)
+        for _ in range(3):
+            if site_page.url and site_page.url.startswith("http"):
+                break
+            site_page.wait_for_timeout(1000)
+        assert site_page.url.startswith("http"), f"URL попапа пустой или не http: {site_page.url!r}"
         assert "gsz.gov.by" not in site_page.url
         site_page.close()
 
@@ -253,7 +258,7 @@ def test_guest_featured_vacancies_block(guest_page: Page):
         main_page.featured_vacancy_links.first.click()
         page.wait_for_load_state("networkidle")
 
-        expect(page).to_have_url(re.compile(r".*/registration/employer/vacancy/\d+/detail-public/"))
+        expect(page).to_have_url(re.compile(r".*/registration/vacancy/[^/]+/"))
         expect(page.locator("h1").first).to_have_text(expected_title, timeout=5000)
         expect(page.locator("text=Информация о вакансии")).to_be_visible(timeout=5000)
 

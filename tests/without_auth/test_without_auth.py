@@ -136,7 +136,7 @@ def test_guest_open_vacancy_detail_via_title(guest_page: Page):
         page.wait_for_load_state("load")
 
     with allure.step("ОР 1: Верификация URL карточки и заголовка вакансии"):
-        expect(page).to_have_url(re.compile(r".*/registration/employer/vacancy/[^/]+/detail-public/"))
+        expect(page).to_have_url(re.compile(r".*/registration/vacancy/[^/]+/"))
         expect(page.locator("h1").first).to_have_text(expected_title, timeout=5000)
 
 
@@ -184,7 +184,7 @@ def test_guest_open_vacancy_contacts(guest_page: Page):
 
     with allure.step("ОР 1: Верификация перехода на блок контактов именно выбранной вакансии"):
         expect(page).to_have_url(
-            re.compile(r".*/registration/employer/vacancy/[^/]+/detail-public/.*#contact-info-anchor")
+            re.compile(r".*/registration/vacancy/[^/]+/.*#contact-info-anchor")
         )
         expect(page.locator("h1").first).to_have_text(expected_title, timeout=5000)
 

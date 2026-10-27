@@ -73,7 +73,8 @@ def open_create_resume_page(auth_page) -> Page:
     """Фикстура открывает страницу создания резюме с выполненной авторизацией"""
     resume_url = "https://gsz.gov.by/registration/job-seeker/resume/create/"
     goto_with_retry(auth_page, resume_url, wait_until="load")
-    auth_page.wait_for_selector("#id_desired_profession", state="visible", timeout=30000)
+    # Поле должности рендерится через select2: ждём контейнер, а не нативный select
+    auth_page.locator("[id^='select2-id_desired_profession'][id$='container']").first.wait_for(state="visible", timeout=30000)
     auth_page.wait_for_load_state("networkidle")
     return auth_page
 

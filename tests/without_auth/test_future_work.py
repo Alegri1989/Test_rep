@@ -26,7 +26,12 @@ def test_guest_search_by_profession(guest_page: Page, future_work_page: FutureWo
     """
     with allure.step("Шаг 1: Переход на страницу и фиксация профессии первой карточки"):
         future_work_page.navigate()
-        future_work_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
+        # Усиление: ждём появления первой карточки с retry
+        for _ in range(3):
+            if future_work_page.vacancy_title_link.count() > 0:
+                future_work_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
+                break
+            guest_page.wait_for_timeout(1000)
         profession = future_work_page.vacancy_title_link.first.text_content().strip()
 
     with allure.step(f"Шаг 2: Ввод профессии '{profession}' и клик по кнопке 'Найти'"):
@@ -37,8 +42,20 @@ def test_guest_search_by_profession(guest_page: Page, future_work_page: FutureWo
 
     with allure.step("ОР 1: Верификация query-параметра profession в URL и наличия карточки в выдаче"):
         expect(guest_page).to_have_url(re.compile(r"profession="))
-        future_work_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
-        assert future_work_page.vacancy_title_link.count() > 0, "Ошибка: поиск по профессии вернул пустой список"
+        # Усиление: если выдача пуста — перезапрашиваем поиск (защита от гонки/пустого ответа)
+        found = False
+        for attempt in range(3):
+            if future_work_page.vacancy_title_link.count() > 0:
+                future_work_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
+                found = True
+                break
+            guest_page.wait_for_timeout(1500)
+            if attempt < 2:
+                # Пусто — повторяем поиск
+                future_work_page.search_button.click()
+                guest_page.wait_for_load_state("load", timeout=20000)
+                guest_page.wait_for_timeout(1000)
+        assert found, "Ошибка: поиск по профессии вернул пустой список"
 
 
 @pytest.mark.future_work

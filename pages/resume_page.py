@@ -47,12 +47,13 @@ class ResumePage:
 
         # Раздел "Пожелания к работе"
         self.profession_container = page.locator(
-            "[id^='select2-id_desired_profession'][id$='container']")
+            "[id^='select2-id_desired_profession'][id$='container']"
+        )
         self.select2_search_input = page.locator(
             "input.select2-search__field[aria-controls*='desired_profession']"
         )
         self.select2_first_option = page.locator(".select2-results__option").first
-        # Производная должности на форме создания (create)
+        # Производная должности на форме создания (create) — formset index 0
         self.derivative_dropdown = page.locator(
             "#id_desired_profession-0-derivative_post_or_profession"
         )
@@ -131,12 +132,12 @@ class ResumePage:
         self.delete_resume_modal = page.locator("#delete_resume")
 
         self.last_publish_button = page.locator("button[type='button']:has-text('Опубликовать')").last
-        self.last_unpublish_button = page.locator("a:has-text('Снять с публикации')").last
+        self.last_unpublish_button = page.locator("a:has-text('Снять с публикации'), button:has-text('Снять с публикации')").last
         self.modal_publish_submit = page.locator("button.resume-modal[type='submit']")
         self.disabled_publish_button = page.locator("button[title*='максимальное количество резюме']")
 
         self.all_publish_buttons = page.locator("button[type='button']:has-text('Опубликовать')")
-        self.all_unpublish_links = page.locator("a:has-text('Снять с публикации')")
+        self.all_unpublish_links = page.locator("a:has-text('Снять с публикации'), button:has-text('Снять с публикации')")
         self.all_delete_buttons = page.get_by_role("button", name="Удалить")
         self.edu_qualification_input = page.locator("#id_resume_education-0-qualification")
         self.first_resume_edit_link = page.locator(
@@ -167,8 +168,15 @@ class ResumePage:
         return self.page.locator(f"button[onclick*='/resume/{resume_id}/change-status/']")
 
     def get_unpublish_btn_by_id(self, resume_id: str):
-        """Возвращает кнопку 'Снять с публикации' для конкретного ID резюме."""
-        return self.page.locator(f"a[href*='/resume/{resume_id}/change-status/']")
+        """Возвращает кнопку 'Снять с публикации' для конкретного ID резюме.
+
+        Важно: матчим по имени JS-функции unpublish_resume, а не просто по change-status,
+        иначе попадём и на кнопку публикации (open_publish_dialog), у которой тот же change-status.
+        """
+        return self.page.locator(
+            f"a[href*='/resume/{resume_id}/change-status/'], "
+            f"button[onclick*='unpublish_resume'][onclick*='/resume/{resume_id}/change-status/']"
+        )
 
     # --- Бизнес-методы взаимодействия ---
     def publish_resume(self, resume_id: str = None):

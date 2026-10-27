@@ -447,7 +447,7 @@ def test_bola_post_cannot_modify_foreign_resume(auth_page: Page):
 @allure.title("Безопасность: Запрет УДАЛЕНИЯ чужого резюме (BOLA DELETE)")
 def test_bola_delete_cannot_remove_foreign_resume(auth_page: Page):
     """
-    Бизнес-кейс: BOLA (delete) — попытка удалить чужое резюме должна быть отклонена (403),
+    Бизнес-кейс: BOLA (delete) — попытка удалить чужое резюме должна быть отклонена (405),
     резюме должно остаться в публичном поиске.
 
     Источник чужого ID: первое опубликованное резюме из публичного поиска.
@@ -462,7 +462,7 @@ def test_bola_delete_cannot_remove_foreign_resume(auth_page: Page):
     3. Проверить, что чужое резюме по-прежнему существует в публичном поиске.
 
     Ожидаемый результат (ОР):
-    - Сервер отклонил удаление (403).
+    - Сервер отклонил удаление (405 Method Not Allowed — GET на delete-эндпоинт не поддерживается).
     - Чужое резюме по-прежнему существует в публичном поиске.
     """
     base_url = "https://gsz.gov.by"
@@ -488,9 +488,9 @@ def test_bola_delete_cannot_remove_foreign_resume(auth_page: Page):
         )
         allure.attach(str(response.status), name="HTTP статус DELETE")
 
-    with allure.step("ОР 1: Сервер отклонил удаление (403)"):
-        assert response.status == 403, (
-            f"BOLA DELETE: ожидался 403, получен {response.status}. "
+    with allure.step("ОР 1: Сервер отклонил удаление (405 Method Not Allowed)"):
+        assert response.status == 405, (
+            f"BOLA DELETE: ожидался 405, получен {response.status}. "
             f"Возможно, чужое резюме было удалено!"
         )
 

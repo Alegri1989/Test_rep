@@ -28,8 +28,8 @@ class HelpPage:
             "tr", has_text="Инструкция по входу нанимателя"
         ).locator("a")
         self.download_chrome_instruction_btn = page.locator("a[href*='Chrome.pdf']")
-        self.download_gossuok_instruction_btn = page.locator("a[href*='GosSUOK.pdf']")
-        self.download_legal_entity_template_btn = page.locator("a[href*='ec0ozce.docx']")
+        self.download_gossuok_instruction_btn = page.locator("a[href*='GosSUOK']")
+        self.download_legal_entity_template_btn = page.locator("a[href*='ec0ozce']")
 
     def navigate(self):
         """Открывает страницу Помощь и поддержка с устойчивостью к медленной сети."""
