@@ -42,16 +42,24 @@ def test_guest_search_by_profession(guest_page: Page, future_work_page: FutureWo
 
     with allure.step("ОР 1: Верификация query-параметра profession в URL и наличия карточки в выдаче"):
         expect(guest_page).to_have_url(re.compile(r"profession="))
-        # Усиление: если выдача пуста — перезапрашиваем поиск (защита от гонки/пустого ответа)
+        # Усиление: после поиска ждём полной стабилизации выдачи (networkidle + явное
+        # состояние), при пустом/нестабильном результате — перезапрашиваем поиск.
+        # «Нет результатов» определяем по отсутствию карточек после стабилизации.
         found = False
-        for attempt in range(3):
+        for attempt in range(4):
+            try:
+                guest_page.wait_for_load_state("networkidle", timeout=15000)
+            except Exception:
+                pass
+            guest_page.wait_for_timeout(800)
             if future_work_page.vacancy_title_link.count() > 0:
                 future_work_page.vacancy_title_link.first.wait_for(state="visible", timeout=5000)
                 found = True
                 break
-            guest_page.wait_for_timeout(1500)
-            if attempt < 2:
-                # Пусто — повторяем поиск
+            # Пусто или нестабильно — перезапрашиваем поиск
+            if attempt < 3:
+                future_work_page.search_input.click()
+                future_work_page.search_input.fill(profession)
                 future_work_page.search_button.click()
                 guest_page.wait_for_load_state("load", timeout=20000)
                 guest_page.wait_for_timeout(1000)
