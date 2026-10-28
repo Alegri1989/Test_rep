@@ -1,7 +1,7 @@
 import allure
 import pytest
 import re
-from playwright.sync_api import Page, expect
+from playwright.sync_api import Page, expect, Error as PlaywrightError
 from pages.main_page import MainPage
 from tests.main_page.config import EMPLOYER_LOGOS_DATA
 
@@ -157,9 +157,20 @@ def test_guest_interactive_map(guest_page: Page):
         expect(main_page.info_card_title).to_be_visible()
 
     with allure.step("Шаг 5: Клик по кнопке 'Перейти к вакансиям' и проверка фильтра в новой вкладке"):
-        with page.expect_popup() as vacancy_popup_info:
-            main_page.go_to_vacancies_button.click()
-        vacancy_page = vacancy_popup_info.value
+        # Клик может не сработать, если JS ещё не навесил обработчик/не проставил href
+        # на только что отрисованной карточке — повторяем с ожиданием карточки.
+        vacancy_page = None
+        for attempt in range(3):
+            try:
+                with page.expect_popup() as vacancy_popup_info:
+                    main_page.go_to_vacancies_button.click()
+                vacancy_page = vacancy_popup_info.value
+                break
+            except PlaywrightError:
+                main_page.info_card.wait_for(state="visible", timeout=10000)
+        assert vacancy_page is not None, (
+            "Ошибка: по кнопке 'Перейти к вакансиям' не открылась новая вкладка"
+        )
         vacancy_page.wait_for_load_state("load")
         vacancy_page.wait_for_timeout(2000)
 

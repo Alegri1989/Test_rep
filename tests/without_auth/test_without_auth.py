@@ -40,7 +40,8 @@ def test_guest_search_by_profession_on_search_page(guest_page: Page):
 
     with allure.step("Шаг 3: Нажатие кнопки 'Найти'"):
         vacancy_page.search_button.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("ОР 1: Верификация декодированного URL"):
         current_url_decoded = unquote(page.url)
@@ -83,7 +84,8 @@ def test_guest_search_by_partial_text_on_search_page(guest_page: Page):
 
     with allure.step("Шаг 3: Нажатие кнопки 'Найти'"):
         vacancy_page.search_button.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("ОР 1: Верификация декодированного URL и заполнения поисковой строки"):
         current_url_decoded = unquote(page.url)

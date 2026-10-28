@@ -90,6 +90,16 @@ def test_guest_filter_by_region(guest_page: Page, future_work_page: FutureWorkPa
 
     with allure.step("Шаг 2: Применение фильтра"):
         future_work_page.apply_filter_and_wait()
+        # Устойчивость: если выбор области не зафиксировался в Select2 (флейк
+        # dropdown), в URL не будет параметра region — повторяем выбор и применение.
+        for attempt in range(3):
+            if re.search(r"region=[^&\s]+", guest_page.url):
+                break
+            future_work_page.select_from_dropdown(future_work_page.region_dropdown, "Минская")
+            future_work_page.apply_filter_and_wait()
+        assert re.search(r"region=[^&\s]+", guest_page.url), (
+            f"Ошибка: фильтр по области 'Минская' не применён, URL: {guest_page.url}"
+        )
 
     with allure.step("ОР 1: Верификация выбранной области во всех карточках результатов"):
         future_work_page.address_value.first.wait_for(state="visible", timeout=5000)
