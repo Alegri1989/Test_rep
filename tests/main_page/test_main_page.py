@@ -38,7 +38,8 @@ def test_guest_search_by_profession(guest_page: Page):
 
     with allure.step("Шаг 3: Нажатие кнопки 'Найти'"):
         main_page.search_button.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("ОР 1: Открылась страница результатов поиска с вакансиями тестировщика"):
         from urllib.parse import unquote
@@ -82,7 +83,8 @@ def test_guest_search_by_partial_text(guest_page: Page):
 
     with allure.step("Шаг 3: Нажатие кнопки 'Найти'"):
         main_page.search_button.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("ОР 1: Верификация URL и заполнения поисковой строки"):
         current_url_decoded = unquote(page.url)
@@ -137,11 +139,13 @@ def test_guest_interactive_map(guest_page: Page):
     with allure.step("Шаг 2: Переключение карты в режим 'Области' и клик по первой точке"):
         main_scale = main_page.map_scale_regions
         main_scale.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
         main_page.map_dots.first.wait_for(state="visible", timeout=5000)
         main_page.map_dots.first.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("Шаг 3: Проверка изменения счетчиков слева под выбранный регион"):
         expect(main_page.region_title).not_to_have_text("Республика Беларусь")
@@ -156,7 +160,8 @@ def test_guest_interactive_map(guest_page: Page):
         with page.expect_popup() as vacancy_popup_info:
             main_page.go_to_vacancies_button.click()
         vacancy_page = vacancy_popup_info.value
-        vacancy_page.wait_for_load_state("networkidle")
+        vacancy_page.wait_for_load_state("load")
+        vacancy_page.wait_for_timeout(2000)
 
         decoded_vacancy_url = unquote(vacancy_page.url)
         assert "https://gsz.gov.by" in decoded_vacancy_url
@@ -206,7 +211,8 @@ def test_guest_youth_employment_redirect(guest_page: Page):
 
     with allure.step("Шаг 2: Клик по кнопке и ожидание загрузки новой страницы"):
         main_page.youth_employment_button.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("ОР 1: Открылся раздел временного трудоустройства молодежи"):
         expect(page).to_have_url("https://gsz.gov.by/registration/temporary-employment/young/")
@@ -256,20 +262,23 @@ def test_guest_featured_vacancies_block(guest_page: Page):
         expected_title = main_page.featured_vacancy_links.first.text_content().strip()
 
         main_page.featured_vacancy_links.first.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
         expect(page).to_have_url(re.compile(r".*/registration/vacancy/[^/]+/"))
         expect(page.locator("h1").first).to_have_text(expected_title, timeout=5000)
         expect(page.locator("text=Информация о вакансии")).to_be_visible(timeout=5000)
 
         page.go_back()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("Шаг 3: Клик по кнопке 'Показать больше'"):
         main_more = main_page.show_more_vacancies_btn
         main_more.scroll_into_view_if_needed()
         main_more.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("ОР 1: Открылась общая страница результатов поиска вакансий"):
         expect(page).to_have_url("https://gsz.gov.by/registration/vacancy-search/")
@@ -309,12 +318,14 @@ def test_guest_skills_search_workflow(guest_page: Page):
     with allure.step("Шаг 2: Проверка поиска вакансий по выбранному навыку"):
         expect(main_page.skills_search_button).to_have_attribute("formaction", "/registration/vacancy-search/")
         main_page.skills_search_button.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
         expect(page).to_have_url(re.compile(r".*/registration/vacancy-search/.*"))
 
         page.go_back()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("Шаг 3: Переключение ползунка на 'Резюме' и повторный выбор навыка"):
         main_page.skills_switch.scroll_into_view_if_needed()
@@ -326,7 +337,8 @@ def test_guest_skills_search_workflow(guest_page: Page):
     with allure.step("Шаг 4: Проверка поиска резюме по выбранному навыку"):
         expect(main_page.skills_search_button).to_have_attribute("formaction", "/registration/resume-search/")
         main_page.skills_search_button.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
         expect(page).to_have_url(re.compile(r".*/registration/resume-search/.*"))
 
@@ -363,7 +375,8 @@ def test_guest_employer_logo_redirect(guest_page: Page, img_name: str, expected_
         page.wait_for_timeout(1000)
 
         main_page.click_employer_logo_via_js(img_name)
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step(f"ОР 1: В фильтре нанимателей отображается плашка: {expected_employer_title}"):
         expect(page).to_have_url(re.compile(r".*/registration/vacancy-search/.*"))
@@ -372,7 +385,8 @@ def test_guest_employer_logo_redirect(guest_page: Page, img_name: str, expected_
         expect(selected_employer).to_be_visible(timeout=5000)
 
         page.go_back()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
         page.wait_for_timeout(1000)
 
 
@@ -448,7 +462,8 @@ def test_guest_immigrant_employment_redirect(guest_page: Page):
 
     with allure.step("Шаг 2: Клик по кнопке 'Перейти' и ожидание загрузки страницы"):
         main_page.immigrant_employment_button.click()
-        page.wait_for_load_state("networkidle")
+        page.wait_for_load_state("load")
+        page.wait_for_timeout(2000)
 
     with allure.step("ОР 1: Открылся раздел трудоустройства иностранных граждан"):
         expect(page).to_have_url(re.compile(r".*/registration/foreign-citizens-employment/public/list/.*"))

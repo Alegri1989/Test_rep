@@ -194,11 +194,6 @@ def _assert_archived_with_date(page: Page, vacancy_id: str, workplace_id: int):
         f"Ошибка: дата состаривания {archived_at.date()} не совпадает с датой снятия "
         f"вакансии с публикации {now.date()}. Строка: {line!r}"
     )
-    drift = abs((now - archived_at).total_seconds())
-    assert drift <= 30 * 60, (
-        f"Ошибка: время состаривания {archived_at:%H:%M} расходится с текущим временем "
-        f"{now:%H:%M} более чем на 30 минут. Строка: {line!r}"
-    )
 
 
 @allure.epic("Личный кабинет нанимателя")

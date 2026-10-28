@@ -49,7 +49,7 @@ class JobSeekerResponsesPage:
         """Переход на страницу поиска вакансий."""
         goto_with_retry(self.page, self.url, wait_until="load")
         self.page.wait_for_selector("#id_profession", state="visible", timeout=30000)
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_timeout(2000)
 
     def filter_by_employer_unp(self, unp: str):
         """Фильтрация вакансий по УНП нанимателя через Select2."""

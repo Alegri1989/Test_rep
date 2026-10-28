@@ -32,7 +32,8 @@ def test_guest_search_nonsense_returns_empty(guest_page: Page, vacancy_page: Vac
         vacancy_page.search_input.click()
         vacancy_page.search_input.fill(nonsense)
         vacancy_page.search_button.click()
-        guest_page.wait_for_load_state("networkidle")
+        guest_page.wait_for_load_state("load")
+        guest_page.wait_for_timeout(2000)
 
     with allure.step("ОР: карточки вакансий в выдаче отсутствуют"):
         assert f"profession={nonsense}" in unquote(guest_page.url), (
