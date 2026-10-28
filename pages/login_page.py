@@ -1,4 +1,4 @@
-from playwright.sync_api import Page
+from playwright.sync_api import Page, Error as PlaywrightError
 from helpers.network_helper import goto_with_retry
 
 
@@ -30,11 +30,15 @@ class LoginPage:
         """Вход в систему с честным принятием куки и обработкой редиректа."""
         self.navigate()
 
-        # 1. Честно кликаем по кнопке "Принять" в плашке и ждём навигации
+        # 1. Честно кликаем по кнопке "Принять" в плашке, если она есть
+        # (на повторных попытках логина куки уже приняты и плашка скрыта)
         cookie_accept = self.page.locator("a.cookie-panel__info_button")
-        cookie_accept.wait_for(state="visible", timeout=5000)
-        with self.page.expect_navigation(wait_until="load", timeout=10000):
-            cookie_accept.click()
+        try:
+            cookie_accept.wait_for(state="visible", timeout=5000)
+            with self.page.expect_navigation(wait_until="load", timeout=10000):
+                cookie_accept.click()
+        except PlaywrightError:
+            pass
 
         # 3. Теперь, когда мы на главной и плашки больше нет, снова переходим на страницу входа
         self.navigate()
@@ -54,5 +58,8 @@ class LoginPage:
         self.password_input.wait_for(state="visible", timeout=10000)
         self.password_input.fill(password)
 
-        # 7. Входим в аккаунт
+        # 7. Входим в аккаунт и дожидаемся завершения авторизации.
+        # Важно: если сразу после клика сделать переход на другую страницу,
+        # ещё не завершившийся логин будет отменён (сессия не создастся).
         self.submit_button.click()
+        self.page.wait_for_url(lambda u: "user/login" not in u, timeout=30000)

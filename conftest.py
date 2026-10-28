@@ -5,7 +5,7 @@ import logging.config
 from pathlib import Path
 import pytest
 import allure
-from playwright.sync_api import sync_playwright, Page
+from playwright.sync_api import sync_playwright, Page, Error as PlaywrightError
 
 _ROOT = Path(__file__).parent
 sys.path.insert(0, str(_ROOT))
@@ -51,12 +51,30 @@ def run_global_auth(pytestconfig):
         page = context.new_page()
 
         login_page = LoginPage(page)
-        login_page.login(CONFIG['user_email'], CONFIG['user_password'])
+        profile_url = "https://gsz.gov.by/registration/job-seeker/personal-info/"
 
-        fio = CONFIG["default_profile"]
-        full_name = f"{fio['last_name']} {fio['first_name']} {fio['middle_name']}".upper()
+        # Логин может не подтвердиться за один раз (портал подтормозил) —
+        # повторяем до 3 раз с нарастающей паузой.
+        last_error = None
+        for attempt in range(1, 4):
+            try:
+                login_page.login(CONFIG['user_email'], CONFIG['user_password'])
+                # Устойчивая проверка входа: страница персональных данных
+                # доступна и показывает поле ФИО (не редиректит на логин).
+                # Не привязываемся к точному ФИО — его могут менять тесты профиля.
+                page.goto(profile_url, wait_until="domcontentloaded", timeout=45000)
+                page.locator("#id_last_name").wait_for(state="visible", timeout=15000)
+                last_error = None
+                break
+            except PlaywrightError as error:
+                last_error = error
+                logging.warning(
+                    f"Логин не подтверждён (попытка {attempt}/3): {error}, повтор..."
+                )
+                page.wait_for_timeout(1000 * attempt)
+        if last_error is not None:
+            raise last_error
 
-        page.get_by_text(full_name).wait_for(state="visible", timeout=10000)
         page.wait_for_timeout(500)
 
         context.storage_state(path=AUTH_STATE_PATH)
