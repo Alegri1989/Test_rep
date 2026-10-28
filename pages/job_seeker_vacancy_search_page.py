@@ -1,5 +1,5 @@
 import re
-from playwright.sync_api import Page, Locator, expect
+from playwright.sync_api import Page, Locator, expect, Error as PlaywrightError
 
 from pages.vacancy_search_page import VacancySearchPage
 
@@ -27,7 +27,7 @@ class JobSeekerVacancySearchPage(VacancySearchPage):
         """Переход на страницу и ожидание готовности списка вакансий."""
         self.page.goto(self.url)
         self.page.wait_for_selector("#id_profession", state="visible", timeout=60000)
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_timeout(2000)
 
     def get_favorite_button(self, vacancy_index: int) -> Locator:
         """Получение кнопки избранного для конкретной вакансии."""
@@ -99,7 +99,7 @@ class JobSeekerVacancySearchPage(VacancySearchPage):
             return
         with self.page.expect_navigation(wait_until="load"):
             self.show_favorites_label.click()
-        self.page.wait_for_load_state("networkidle")
+        self.page.wait_for_timeout(2000)
 
     def click_print_favorites(self, timeout=30000):
         """Инициирует печать списка избранного и возвращает ответ сервера.
@@ -116,18 +116,33 @@ class JobSeekerVacancySearchPage(VacancySearchPage):
         return response_info.value
 
     def clear_all_favorites(self):
-        """Очищает всё избранное на аккаунте: подтверждает JS-диалог и ждёт стабилизации.
+        """Очищает всё избранное на аккаунте: подтверждает JS-диалог и ждёт,
+        пока на странице не исчезнут все «сплошные» звёзды избранного.
 
         Кнопка присутствует всегда. При непустом избранном подтверждение
-        диалога перезагружает список, при пустом — навигации нет. Поэтому не
-        используем expect_navigation (он бы завис на пустом избранном), а ждём
-        load/networkidle: при перезагрузке дождёмся её, иначе вернёмся сразу.
+        диалога перезагружает список, но момент перезагрузки относительно
+        клика не гарантирован — поэтому ждём фактического обновления DOM
+        (wait_for_function), а не load/networkidle. Если избранное всё же
+        осталось (сервер ещё не зафиксировал очистку к моменту перезагрузки) —
+        повторяем очистку.
         """
         self.clear_favorites_btn.wait_for(state="visible", timeout=30000)
-        self.page.once("dialog", lambda dialog: dialog.accept())
-        self.clear_favorites_btn.click()
-        self.page.wait_for_load_state("load")
-        self.page.wait_for_load_state("networkidle")
+        for attempt in range(3):
+            self.page.once("dialog", lambda dialog: dialog.accept())
+            self.clear_favorites_btn.click()
+            try:
+                self.page.wait_for_function(
+                    """() => Array.from(document.querySelectorAll('button.favorite_btn i'))
+                              .every(icon => !((icon.className || '').split(' ').includes('fas')))""",
+                    timeout=20000,
+                )
+                return
+            except PlaywrightError:
+                self.page.wait_for_timeout(2000)
+        # Три попытки не помогли — даём тесту упасть с понятной ошибкой
+        raise AssertionError(
+            f"Ошибка: не удалось очистить избранное, осталось избранных: {self.count_favorited()}"
+        )
 
     def get_vacancy_count(self) -> int:
         return self.vacancy_cards.count()

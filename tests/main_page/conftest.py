@@ -40,7 +40,7 @@ def guest_page(pytestconfig):
 
         # Переводим страницу обратно на главную для старта тестов
         goto_with_retry(page, "https://gsz.gov.by", wait_until="load")
-        page.wait_for_load_state("networkidle")
+        page.wait_for_timeout(2000)
 
         yield page
 
