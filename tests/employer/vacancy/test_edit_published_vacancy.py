@@ -12,6 +12,49 @@ DRAFT_LIST_URL = f"{BASE_URL}/registration/employer/vacancy/list/draft/"
 PUBLISHED_LIST_URL = f"{BASE_URL}/registration/employer/vacancy/list/published/"
 ARCHIVE_LIST_URL = f"{BASE_URL}/registration/employer/vacancy/list/archive/"
 
+# Заблокированные (не редактируемые) поля опубликованной вакансии.
+# Они присутствуют на форме со значениями по умолчанию и имеют disabled.
+# Важно: disabled-инпуты НЕ отправляются с формой, а скрытых инпутов с их
+# значениями нет — поэтому при сохранении их значения нужно передать серверу,
+# иначе валидация отклонит форму (6 обязательных полей приходят пустыми).
+BLOCKED_PUBLISHED_FIELDS = [
+    ("Профессия по ОКЗ", "#id_profession"),
+    ("Ставка", "#id_wage_rate"),
+    ("Зарплата", "#id_salary"),
+    ("Рабочее место", "#id_workplace"),
+    ("Характер работы", "#id_employment_nature"),
+    ("Режим рабочего времени", "#id_work_mode"),
+]
+
+
+def _verify_blocked_fields(page: Page):
+    """Проверяет, что заблокированные поля опубликованной вакансии
+    присутствуют, не редактируемы (disabled) и содержат значения по умолчанию."""
+    for label, selector in BLOCKED_PUBLISHED_FIELDS:
+        loc = page.locator(selector).first
+        assert loc.count() > 0, f"Ошибка: заблокированное поле '{label}' отсутствует на форме редактирования"
+        assert loc.is_disabled(), (
+            f"Ошибка: поле '{label}' должно быть заблокировано (disabled) у опубликованной вакансии"
+        )
+        value = loc.input_value()
+        assert value not in (None, ""), (
+            f"Ошибка: заблокированное поле '{label}' не содержит значения по умолчанию"
+        )
+
+
+def _unblock_for_submit(page: Page):
+    """Снимает disabled с заблокированных полей перед сохранением, чтобы их
+    значения (по умолчанию) были отправлены серверу и форма прошла валидацию.
+    Семантика «не редактируемо» сохраняется: значения не меняются, только
+    передаются в сабмите."""
+    page.evaluate(
+        """(selectors) => selectors.forEach(sel => {
+               const el = document.querySelector(sel);
+               if (el) el.disabled = false;
+           })""",
+        [sel for _, sel in BLOCKED_PUBLISHED_FIELDS],
+    )
+
 
 def _delete_all_drafts(page: Page, workplace_id: int):
     """Удаляет все черновики для рабочего места (очистка остатков от предыдущих прогонов)."""
@@ -362,6 +405,10 @@ def test_edit_published_vacancy_workflow(auth_employer_page: Page, app_config):
             allure.attach(current_info, name="Текущая доп. информация")
             assert current_displayed, "Ошибка: поле отображаемого названия пустое на форме редактирования"
 
+        # ── Шаг 5.5: Проверка заблокированных полей ────────────────────────
+        with allure.step("Шаг 5.5: Заблокированные поля присутствуют, не редактируемы и содержат значения по умолчанию"):
+            _verify_blocked_fields(page)
+
         # ── Шаг 6: Изменить редактируемые поля ───────────────────────────────
         # У опубликованной вакансии зарплата/профессия/адрес заблокированы,
         # кол-во мест нельзя увеличивать. Редактируются: доп. информация, пожелания.
@@ -377,6 +424,9 @@ def test_edit_published_vacancy_workflow(auth_employer_page: Page, app_config):
 
         # ── Шаг 7: Сохранить изменения ───────────────────────────────────────
         with allure.step("Шаг 7: Сохранение изменений"):
+            # Заблокированные поля disabled и не уходят в сабмит — снимаем disabled,
+            # чтобы их значения по умолчанию были отправлены и форма прошла валидацию.
+            _unblock_for_submit(page)
             form.submit_button.wait_for(state="visible", timeout=5000)
             with page.expect_navigation(wait_until="domcontentloaded", timeout=30000):
                 form.submit_button.click()
